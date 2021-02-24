@@ -1,11 +1,15 @@
 # WordpressSharp
 Library to interact with Wordpress REST API in a fluent pattern.
 
-### NOTE
+## Supported Platforms
+* .net standard 2.1
+
+## NOTE
 This library was developed for one of my client projects to fix many limitations of existing libraries.
 Library is not yet complete by any means. I have only implemented basic requests and structure. i hope to complete this soon as my time allows me.
 
-## Example usage
+## Example
+***You can checkout full sample [Here](WordpressSharp.Demo/Program.cs)***
 
 ```cs
 CookieContainer container = new CookieContainer();

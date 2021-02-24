@@ -1,13 +1,8 @@
 using Newtonsoft.Json;
 using System;
-using System.Collections.Generic;
-using System.Text;
-using static PathanamthittaMedia.Library.Utilites;
 
-namespace WordpressSharp.Models.Responses
-{
-	public class Post : BaseResponse
-	{
+namespace WordpressSharp.Models.Responses {
+	public class Post : BaseResponse {
 		[JsonProperty("id")]
 		public int Id { get; set; }
 
@@ -80,8 +75,7 @@ namespace WordpressSharp.Models.Responses
 		[JsonProperty("_embedded")]
 		public Embed Embed { get; set; }
 
-		public class GuidContainer
-		{
+		public class GuidContainer {
 			[JsonProperty("rendered")]
 			public string Rendered { get; set; }
 		}
@@ -100,8 +94,7 @@ namespace WordpressSharp.Models.Responses
 			public string NickName { get; set; }
 		}
 
-		public class TitleContainer
-		{
+		public class TitleContainer {
 			[JsonProperty("rendered")]
 			public string Rendered { get; set; }
 
@@ -109,8 +102,7 @@ namespace WordpressSharp.Models.Responses
 			public string Parsed => !string.IsNullOrEmpty(Rendered) ? Rendered.CleanContent() : Rendered;
 		}
 
-		public class ContentContainer
-		{
+		public class ContentContainer {
 			[JsonProperty("rendered")]
 			public string Rendered { get; set; }
 
@@ -121,8 +113,7 @@ namespace WordpressSharp.Models.Responses
 			public bool Protected { get; set; }
 		}
 
-		public class ExcerptContainer
-		{
+		public class ExcerptContainer {
 			[JsonProperty("rendered")]
 			public string Rendered { get; set; }
 

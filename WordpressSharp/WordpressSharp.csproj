@@ -2,6 +2,21 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.1</TargetFramework>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <Description>Library to interact with Wordpress REST API in a fluent pattern.</Description>
+    <Authors>ArunPrakashG</Authors>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/ArunPrakashG/WordpressSharp</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/ArunPrakashG/WordpressSharp</RepositoryUrl>
+    <RepositoryType>GIT</RepositoryType>
+    <PackageTags>wordpress, csharp, dotnet, library</PackageTags>
+    <SignAssembly>false</SignAssembly>
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <DocumentationFile>K:\GitHub-Projects\WordpressSharp\WordpressSharp\WordpressSharp.xml</DocumentationFile>
+    <OutputPath>Out\</OutputPath>
   </PropertyGroup>
 
   <ItemGroup>

@@ -1,15 +1,11 @@
 using Newtonsoft.Json;
-using PathanamthittaMedia.Library.Models.Responses.JWT;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace WordpressSharp.Models.Responses.JWT {
-	public class Token : Base {
+	internal class Token : Base {
 		[JsonProperty("data")]
-		public TokenContainer Container { get; set; }
+		internal TokenContainer Container { get; set; }
 
-		public class TokenContainer {
+		internal class TokenContainer {
 			[JsonProperty("token")]
 			public string Token { get; set; }
 

@@ -1,7 +1,6 @@
 using System;
 
-namespace WordpressSharp
-{
+namespace WordpressSharp {
 	public struct RequestStatus {
 		public readonly bool Status;
 		public readonly string ErrorMessage;

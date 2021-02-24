@@ -35,7 +35,7 @@ namespace WordpressSharp.Models.Requests {
 		private List<int> ExcludedCategories;
 		private bool OnlySticky;
 		private bool Embeded;
-		private Authorization Authorization;
+		private WordpressAuthorization Authorization;
 		private Func<string, bool> ResponseValidationDelegate;
 		private HttpMethod Method;
 		private Dictionary<string, string> Headers;
@@ -216,7 +216,7 @@ namespace WordpressSharp.Models.Requests {
 			return default;
 		}
 
-		public RequestBuilder WithAuthorization(Authorization auth) {
+		public RequestBuilder WithAuthorization(WordpressAuthorization auth) {
 			if (auth.IsDefault) {
 				return this;
 			}

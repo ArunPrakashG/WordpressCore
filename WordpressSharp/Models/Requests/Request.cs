@@ -10,7 +10,7 @@ namespace WordpressSharp.Models.Requests {
 		internal readonly string Endpoint;
 		internal readonly Callback Callback;
 		internal readonly CancellationToken Token;
-		internal readonly Authorization Authorization;
+		internal readonly WordpressAuthorization Authorization;
 		internal readonly Func<string, bool> ValidationDelegate;
 		internal readonly HttpMethod RequestMethod;
 		internal readonly Dictionary<string, string> Headers;
@@ -30,7 +30,7 @@ namespace WordpressSharp.Models.Requests {
 
 		public bool IsRequestExecutable => RequestUri != null;
 
-		public Request(Uri requestUri, Func<string, bool> validationDelegate, string endpoint, CancellationToken token, Authorization auth, HttpMethod method, Dictionary<string,string> headers, Dictionary<string,string> formBody, Callback callback = null) {
+		public Request(Uri requestUri, Func<string, bool> validationDelegate, string endpoint, CancellationToken token, WordpressAuthorization auth, HttpMethod method, Dictionary<string,string> headers, Dictionary<string,string> formBody, Callback callback = null) {
 			RequestUri = requestUri;
 			Callback = callback;
 			Endpoint = endpoint;

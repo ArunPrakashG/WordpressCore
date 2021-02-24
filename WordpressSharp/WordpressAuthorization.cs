@@ -5,13 +5,12 @@ using System.IO;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Threading.Tasks;
-using static WordpressSharp.RequesterClient;
+using WordpressSharp.Models.Responses.JWT;
+using static WordpressSharp.WordpressClient;
 
-namespace WordpressSharp
-{
-	public class Authorization
-	{
-		public static Authorization Default => new Authorization(string.Empty, string.Empty, type: AuthorizationType.NoAuth);
+namespace WordpressSharp {
+	public class WordpressAuthorization {
+		public static WordpressAuthorization Default => new WordpressAuthorization(string.Empty, string.Empty, type: AuthorizationType.NoAuth);
 		public bool IsDefault => string.IsNullOrEmpty(UserName) || string.IsNullOrEmpty(Password);
 		internal readonly string UserName;
 		internal readonly string Password;
@@ -21,8 +20,7 @@ namespace WordpressSharp
 		internal string EncryptedAccessToken;
 		private bool HasValidatedOnce;
 
-		public Authorization(string userName, string passWord, string jwtToken = null, AuthorizationType type = AuthorizationType.NoAuth)
-		{
+		public WordpressAuthorization(string userName, string passWord, string jwtToken = null, AuthorizationType type = AuthorizationType.NoAuth) {
 			UserName = userName;
 			Password = passWord;
 			JwtToken = jwtToken;
@@ -31,10 +29,8 @@ namespace WordpressSharp
 			EncryptedAccessToken = string.Empty;
 			HasValidatedOnce = false;
 
-			if (!IsDefault)
-			{
-				switch (type)
-				{
+			if (!IsDefault) {
+				switch (type) {
 					case AuthorizationType.Basic:
 						Scheme = "Basic";
 						EncryptedAccessToken = Utilites.Base64Encode($"{UserName}:{Password}");
@@ -47,36 +43,28 @@ namespace WordpressSharp
 			}
 		}
 
-		internal async Task<bool> HandleJwtAuthentication(string baseUrl, HttpClient client, Callback callback = null)
-		{
-			if (AuthorizationType != AuthorizationType.Jwt || client == null || string.IsNullOrEmpty(baseUrl))
-			{
+		internal async Task<bool> HandleJwtAuthentication(string baseUrl, HttpClient client, Callback callback = null) {
+			if (AuthorizationType != AuthorizationType.Jwt || client == null || string.IsNullOrEmpty(baseUrl)) {
 				return false;
 			}
 
-			if (HasValidatedOnce && !string.IsNullOrEmpty(EncryptedAccessToken))
-			{
+			if (HasValidatedOnce && !string.IsNullOrEmpty(EncryptedAccessToken)) {
 				return true;
 			}
 
-			if (!string.IsNullOrEmpty(EncryptedAccessToken) && await ValidateExistingToken(baseUrl, client).ConfigureAwait(false))
-			{
+			if (!string.IsNullOrEmpty(EncryptedAccessToken) && await ValidateExistingToken(baseUrl, client).ConfigureAwait(false)) {
 				return true;
 			}
 
-			using (HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Post, Path.Combine(baseUrl, "jwt-auth/v1/token")))
-			{
+			using (HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Post, Path.Combine(baseUrl, "jwt-auth/v1/token"))) {
 				request.Content = new FormUrlEncodedContent(new[] {
 					new KeyValuePair<string, string>("username", UserName),
 					new KeyValuePair<string, string>("password", Password)
 				});
 
-				try
-				{
-					using (HttpResponseMessage response = await client.SendAsync(request).ConfigureAwait(false))
-					{
-						if (!response.IsSuccessStatusCode)
-						{
+				try {
+					using (HttpResponseMessage response = await client.SendAsync(request).ConfigureAwait(false)) {
+						if (!response.IsSuccessStatusCode) {
 							return false;
 						}
 
@@ -85,31 +73,24 @@ namespace WordpressSharp
 						return true;
 					}
 				}
-				catch (Exception e)
-				{
+				catch (Exception e) {
 					callback?.UnhandledExceptionCallback?.Invoke(e);
 					return false;
 				}
 			}
 		}
 
-		private async Task<bool> ValidateExistingToken(string baseUrl, HttpClient client)
-		{
-			if (AuthorizationType != AuthorizationType.Jwt || client == null || string.IsNullOrEmpty(baseUrl) || string.IsNullOrEmpty(EncryptedAccessToken))
-			{
+		private async Task<bool> ValidateExistingToken(string baseUrl, HttpClient client) {
+			if (AuthorizationType != AuthorizationType.Jwt || client == null || string.IsNullOrEmpty(baseUrl) || string.IsNullOrEmpty(EncryptedAccessToken)) {
 				return false;
 			}
 
-			using (HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Post, Path.Combine(baseUrl, "jwt-auth/v1/token/validate")))
-			{
+			using (HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Post, Path.Combine(baseUrl, "jwt-auth/v1/token/validate"))) {
 				request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", EncryptedAccessToken);
 
-				try
-				{
-					using (HttpResponseMessage response = await client.SendAsync(request).ConfigureAwait(false))
-					{
-						if (!response.IsSuccessStatusCode)
-						{
+				try {
+					using (HttpResponseMessage response = await client.SendAsync(request).ConfigureAwait(false)) {
+						if (!response.IsSuccessStatusCode) {
 							return false;
 						}
 
@@ -118,8 +99,7 @@ namespace WordpressSharp
 						return validation.IsSuccess;
 					}
 				}
-				catch
-				{
+				catch {
 					return false;
 				}
 			}

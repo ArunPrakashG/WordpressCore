@@ -3,6 +3,9 @@ Library to interact with Wordpress REST API in a fluent pattern.
 
 ## Supported Platforms
 * .net standard 2.1
+* .net 5
+* .net core 3.0
+* .net core 3.1
 
 ## NOTE
 This library was developed for one of my client projects to fix many limitations of existing libraries.
@@ -74,7 +77,7 @@ CookieContainer container = new CookieContainer();
 
 				// Should be called at the end of the builder to build the request as a Request object
 				// you can also pass a method to handle Progress of the request. IProgress<double>
-				.CreateWithCallback(new Callback(OnException, OnResponseReceived, OnRequestStatus)), new Progress<double>(HandleProgressUpdates)) {
+				.CreateWithCallback(new Callback(OnException, OnResponseReceived, OnRequestStatus)), new Progress<double>(HandleProgressUpdates))) {
 
 			}
 ```

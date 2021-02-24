@@ -1,6 +1,7 @@
 using System;
 
-namespace PathanamthittaMedia.Library {
+namespace WordpressSharp
+{
 	public struct RequestStatus {
 		public readonly bool Status;
 		public readonly string ErrorMessage;

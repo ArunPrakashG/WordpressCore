@@ -1,6 +1,6 @@
 using Newtonsoft.Json;
 
-namespace PathanamthittaMedia.Library.Models.Responses {
+namespace WordpressSharp.Models.Responses {
 	public abstract class BaseResponse {
 		[JsonProperty("featured_image_url")]
 		public string FeaturedImageUrl { get; set; }

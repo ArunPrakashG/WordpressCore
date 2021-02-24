@@ -4,7 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace PathanamthittaMedia.Library.Models.Responses.JWT {
+namespace WordpressSharp.Models.Responses.JWT {
 	public class Token : Base {
 		[JsonProperty("data")]
 		public TokenContainer Container { get; set; }

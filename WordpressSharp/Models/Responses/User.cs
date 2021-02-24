@@ -1,6 +1,6 @@
 using Newtonsoft.Json;
 
-namespace PathanamthittaMedia.Library.Models.Responses {
+namespace WordpressSharp.Models.Responses {
 	public class User : BaseResponse {
 		[JsonProperty("id")]
 		public int Identifier { get; set; }

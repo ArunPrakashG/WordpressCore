@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Net;
 using System.Text;
 
-namespace PathanamthittaMedia.Library.Models.Responses {
+namespace WordpressSharp.Models.Responses {
 	public static class Response {
 		public static Response<T> CloneFrom<T>(T responseValue, Response<T[]> result) {
 			if (responseValue == null) {

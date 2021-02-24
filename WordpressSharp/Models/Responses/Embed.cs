@@ -3,7 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace PathanamthittaMedia.Library.Models.Responses {
+namespace WordpressSharp.Models.Responses {
 	public class Embed {
 		[JsonProperty("author")]
 		public User[] Author { get; set; }

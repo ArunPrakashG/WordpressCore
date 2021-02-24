@@ -7,7 +7,8 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
-namespace PathanamthittaMedia.Library {
+namespace WordpressSharp
+{
 	internal static class Utilites {
 		internal static string AppendUrlQueryParameter(this string url, string key, string val, bool hasQueryParameter) {
 			if (string.IsNullOrEmpty(url) || string.IsNullOrEmpty(key) || string.IsNullOrEmpty(val)) {

@@ -1,7 +1,7 @@
 using Newtonsoft.Json;
 using System;
 
-namespace PathanamthittaMedia.Library.Models.Responses {
+namespace WordpressSharp.Models.Responses {
 	public class Comment : BaseResponse {
 		[JsonProperty("id")]
 		public int Identifier { get; set; }

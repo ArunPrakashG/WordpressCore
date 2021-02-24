@@ -7,7 +7,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Threading;
 
-namespace PathanamthittaMedia.Library.Models.Requests {
+namespace WordpressSharp.Models.Requests {
 	public class RequestBuilder {
 		private Uri BaseUri;
 		private Uri RequestUri;

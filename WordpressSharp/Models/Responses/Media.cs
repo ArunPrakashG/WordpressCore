@@ -3,7 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace PathanamthittaMedia.Library.Models.Responses {
+namespace WordpressSharp.Models.Responses {
 	public class Media : BaseResponse {
 		[JsonProperty("id")]
 		public int Identifier { get; set; }

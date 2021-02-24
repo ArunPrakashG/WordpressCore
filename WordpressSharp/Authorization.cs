@@ -1,16 +1,16 @@
 using Newtonsoft.Json;
-using PathanamthittaMedia.Library.Models.Responses.JWT;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Threading.Tasks;
-using static PathanamthittaMedia.Library.RequesterClient;
-using static PathanamthittaMedia.Library.Utilites;
+using static WordpressSharp.RequesterClient;
 
-namespace PathanamthittaMedia.Library {
-	public class Authorization {
+namespace WordpressSharp
+{
+	public class Authorization
+	{
 		public static Authorization Default => new Authorization(string.Empty, string.Empty, type: AuthorizationType.NoAuth);
 		public bool IsDefault => string.IsNullOrEmpty(UserName) || string.IsNullOrEmpty(Password);
 		internal readonly string UserName;
@@ -21,7 +21,8 @@ namespace PathanamthittaMedia.Library {
 		internal string EncryptedAccessToken;
 		private bool HasValidatedOnce;
 
-		public Authorization(string userName, string passWord, string jwtToken = null, AuthorizationType type = AuthorizationType.NoAuth) {
+		public Authorization(string userName, string passWord, string jwtToken = null, AuthorizationType type = AuthorizationType.NoAuth)
+		{
 			UserName = userName;
 			Password = passWord;
 			JwtToken = jwtToken;
@@ -30,11 +31,13 @@ namespace PathanamthittaMedia.Library {
 			EncryptedAccessToken = string.Empty;
 			HasValidatedOnce = false;
 
-			if (!IsDefault) {
-				switch (type) {
+			if (!IsDefault)
+			{
+				switch (type)
+				{
 					case AuthorizationType.Basic:
 						Scheme = "Basic";
-						EncryptedAccessToken = Base64Encode($"{UserName}:{Password}");
+						EncryptedAccessToken = Utilites.Base64Encode($"{UserName}:{Password}");
 						break;
 					case AuthorizationType.Jwt:
 						Scheme = "Bearer";
@@ -44,28 +47,36 @@ namespace PathanamthittaMedia.Library {
 			}
 		}
 
-		internal async Task<bool> HandleJwtAuthentication(string baseUrl, HttpClient client, Callback callback = null) {
-			if (AuthorizationType != AuthorizationType.Jwt || client == null || string.IsNullOrEmpty(baseUrl)) {
+		internal async Task<bool> HandleJwtAuthentication(string baseUrl, HttpClient client, Callback callback = null)
+		{
+			if (AuthorizationType != AuthorizationType.Jwt || client == null || string.IsNullOrEmpty(baseUrl))
+			{
 				return false;
 			}
 
-			if (HasValidatedOnce && !string.IsNullOrEmpty(EncryptedAccessToken)) {
+			if (HasValidatedOnce && !string.IsNullOrEmpty(EncryptedAccessToken))
+			{
 				return true;
 			}
 
-			if (!string.IsNullOrEmpty(EncryptedAccessToken) && await ValidateExistingToken(baseUrl, client).ConfigureAwait(false)) {
+			if (!string.IsNullOrEmpty(EncryptedAccessToken) && await ValidateExistingToken(baseUrl, client).ConfigureAwait(false))
+			{
 				return true;
 			}
 
-			using (HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Post, Path.Combine(baseUrl, "jwt-auth/v1/token"))) {
+			using (HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Post, Path.Combine(baseUrl, "jwt-auth/v1/token")))
+			{
 				request.Content = new FormUrlEncodedContent(new[] {
 					new KeyValuePair<string, string>("username", UserName),
 					new KeyValuePair<string, string>("password", Password)
 				});
 
-				try {
-					using (HttpResponseMessage response = await client.SendAsync(request).ConfigureAwait(false)) {
-						if (!response.IsSuccessStatusCode) {
+				try
+				{
+					using (HttpResponseMessage response = await client.SendAsync(request).ConfigureAwait(false))
+					{
+						if (!response.IsSuccessStatusCode)
+						{
 							return false;
 						}
 
@@ -74,24 +85,31 @@ namespace PathanamthittaMedia.Library {
 						return true;
 					}
 				}
-				catch (Exception e){
+				catch (Exception e)
+				{
 					callback?.UnhandledExceptionCallback?.Invoke(e);
 					return false;
 				}
 			}
 		}
 
-		private async Task<bool> ValidateExistingToken(string baseUrl, HttpClient client) {
-			if (AuthorizationType != AuthorizationType.Jwt || client == null || string.IsNullOrEmpty(baseUrl) || string.IsNullOrEmpty(EncryptedAccessToken)) {
+		private async Task<bool> ValidateExistingToken(string baseUrl, HttpClient client)
+		{
+			if (AuthorizationType != AuthorizationType.Jwt || client == null || string.IsNullOrEmpty(baseUrl) || string.IsNullOrEmpty(EncryptedAccessToken))
+			{
 				return false;
 			}
 
-			using (HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Post, Path.Combine(baseUrl, "jwt-auth/v1/token/validate"))) {
+			using (HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Post, Path.Combine(baseUrl, "jwt-auth/v1/token/validate")))
+			{
 				request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", EncryptedAccessToken);
 
-				try {
-					using (HttpResponseMessage response = await client.SendAsync(request).ConfigureAwait(false)) {
-						if (!response.IsSuccessStatusCode) {
+				try
+				{
+					using (HttpResponseMessage response = await client.SendAsync(request).ConfigureAwait(false))
+					{
+						if (!response.IsSuccessStatusCode)
+						{
 							return false;
 						}
 
@@ -100,7 +118,8 @@ namespace PathanamthittaMedia.Library {
 						return validation.IsSuccess;
 					}
 				}
-				catch {
+				catch
+				{
 					return false;
 				}
 			}

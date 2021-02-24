@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace PathanamthittaMedia.Library.Models.Requests {
+namespace WordpressSharp.Models.Requests {
 	public class PostObjectBuilder {
 		private Dictionary<string, string> FormData;
 

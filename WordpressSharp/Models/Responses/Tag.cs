@@ -3,7 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace PathanamthittaMedia.Library.Models.Responses {
+namespace WordpressSharp.Models.Responses {
 	public class Tag : BaseResponse {
 		[JsonProperty("id")]
 		public int Id { get; set; }

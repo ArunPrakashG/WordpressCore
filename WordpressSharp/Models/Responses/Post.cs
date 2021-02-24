@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Text;
 using static PathanamthittaMedia.Library.Utilites;
 
-namespace PathanamthittaMedia.Library.Models.Responses
+namespace WordpressSharp.Models.Responses
 {
 	public class Post : BaseResponse
 	{

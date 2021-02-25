@@ -191,23 +191,23 @@ namespace WordpressSharp {
 			EndpointRequestCountChangedCallback = statisticDelegate;
 			return this;
 		}
-				
-		//public virtual async IAsyncEnumerable<Response<Category>> GetCategoriesAsync(Func<RequestBuilder, Request> request, IProgress<double> progressReport = default) {
-		//	Request requestContainer = request.Invoke(new RequestBuilder().WithBaseAndEndpoint(Path.Combine(BaseUrl, UrlPath), Path.Combine("categories")));
-		//	Response<Category[]> result = await ExecuteAsync<Category[]>(requestContainer).ConfigureAwait(false);
 
-		//	if (!result.Status) {
-		//		yield return Response.CloneFrom<Category>(result.Value[i], result);
-		//	}
+		public virtual async IAsyncEnumerable<Response<Category>> GetCategoriesAsync(Func<RequestBuilder, Request> request, IProgress<double> progressReport = default) {
+			Request requestContainer = request.Invoke(new RequestBuilder().WithBaseAndEndpoint(Path.Combine(BaseUrl, UrlPath), Path.Combine("categories")));
+			Response<Category[]> result = await ExecuteAsync<Category[]>(requestContainer).ConfigureAwait(false);
 
-		//	for (int i = 0; i < result.Value.Length; i++) {
-		//		if (progressReport != null) {
-		//			progressReport.Report(CalculateProgress(i, result.Value.Length));
-		//		}
+			if (!result.Status) {
+				yield break;
+			}
 
-		//		yield return Response.CloneFrom<Category>(result.Value[i], result);
-		//	}
-		//}
+			for (int i = 0; i < result.Value.Length; i++) {
+				if (progressReport != null) {
+					progressReport.Report(CalculateProgress(i, result.Value.Length));
+				}
+
+				yield return Response.CloneFrom<Category>(result.Value[i], result);
+			}
+		}
 
 		public virtual async Task<Response<IEnumerable<Category>>> _GetCategoriesAsync(Func<RequestBuilder, Request> request, IProgress<double> progressReport = default) {
 			Request requestContainer = request.Invoke(new RequestBuilder().WithBaseAndEndpoint(Path.Combine(BaseUrl, UrlPath), Path.Combine("categories")));

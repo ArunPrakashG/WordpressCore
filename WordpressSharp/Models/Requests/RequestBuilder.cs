@@ -56,6 +56,8 @@ namespace WordpressSharp.Models.Requests {
 
 		public RequestBuilder() { }
 
+		public static RequestBuilder WithBuilder() => new RequestBuilder();
+
 		private static bool ContainsQueryValues(string url, out bool hasMultiple) {
 			hasMultiple = false;
 
@@ -199,7 +201,7 @@ namespace WordpressSharp.Models.Requests {
 #if DEBUG
 				Debug.WriteLine(RequestUri.ToString());
 #endif
-				return new Request(RequestUri, ResponseValidationDelegate, Endpoint, Token, Authorization, Method ?? HttpMethod.Get, Headers, FormBody, callback);
+				return new Request(RequestUri, ResponseValidationDelegate, Endpoint, Token, Authorization, Method ?? HttpMethod.Get, Headers, FormBody, PerPageCount, callback);
 			}
 
 			return default;
@@ -210,7 +212,7 @@ namespace WordpressSharp.Models.Requests {
 #if DEBUG
 				Debug.WriteLine(RequestUri.ToString());
 #endif
-				return new Request(RequestUri, null, Endpoint, Token, Authorization, Method ?? HttpMethod.Get, Headers, FormBody);
+				return new Request(RequestUri, null, Endpoint, Token, Authorization, Method ?? HttpMethod.Get, Headers, FormBody, PerPageCount);
 			}
 
 			return default;

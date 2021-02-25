@@ -4,12 +4,12 @@ using System.Net;
 using System.Text;
 
 namespace WordpressSharp.Models.Responses {
-	public static class Response {
-		public static Response<T> CloneFrom<T>(T responseValue, Response<T[]> result) {
+	internal static class Response {
+		internal static Response<T> CloneFrom<T>(T responseValue, Response<T[]> result) {
 			if (responseValue == null) {
 				return default;
 			}
-			
+
 			Response<T> resultContainer = new Response<T>(responseValue);
 			resultContainer.SetHeaders(result.Headers);
 			resultContainer.SetDuration(result.Duration);
@@ -18,6 +18,15 @@ namespace WordpressSharp.Models.Responses {
 			resultContainer.SetMessage(result.Message);
 			return resultContainer;
 		}
+	}
+
+	public class ResponseWrapper {
+		public Dictionary<string, string> Headers;
+		public bool Status;
+		public HttpStatusCode StatusCode;
+		public TimeSpan Duration;
+		public Exception RequestException;
+		public string Message;
 	}
 
 	public class Response<T> {
@@ -35,9 +44,9 @@ namespace WordpressSharp.Models.Responses {
 
 		public string Message { get; private set; }
 
-		public Response(T value) => Value = value;
+		internal Response(T value) => Value = value;
 
-		public Response() { }
+		internal Response() { }
 
 		internal Response<T> SetValue(T value) {
 			Value = value;
@@ -49,7 +58,7 @@ namespace WordpressSharp.Models.Responses {
 			return this;
 		}
 
-		internal void SetMessage(params string[] message) {
+		internal Response<T> SetMessage(params string[] message) {
 			StringBuilder builder = new StringBuilder();
 
 			for (int i = 0; i < message.Length; i++) {
@@ -58,14 +67,27 @@ namespace WordpressSharp.Models.Responses {
 			}
 
 			Message = builder.ToString();
+			return this;
 		}
 
-		internal void SetHeaders(Dictionary<string, string> headers) => Headers = headers;
+		internal Response<T> SetHeaders(Dictionary<string, string> headers) {
+			Headers = headers;
+			return this;
+		}
 
-		internal void SetStatus(bool value) => Status = value;
+		internal Response<T> SetStatus(bool value) {
+			Status = value;
+			return this;
+		}
 
-		internal void SetStatusCode(HttpStatusCode code) => StatusCode = code;
+		internal Response<T> SetStatusCode(HttpStatusCode code) {
+			StatusCode = code;
+			return this;
+		}
 
-		internal void SetDuration(TimeSpan duration) => Duration = duration;
+		internal Response<T> SetDuration(TimeSpan duration) {
+			Duration = duration;
+			return this;
+		}
 	}
 }

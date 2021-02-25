@@ -27,8 +27,8 @@ namespace WordpressSharp {
 		private WordpressAuthorization LoginDetails;
 		private CookieContainer Cookies;
 		private SemaphoreSlim RequestSync;
-		private static Action<string, int> EndpointRequestCountDelegate;
-		private static Func<string, bool> GlobalResponsePreprocessorFunc;
+		private static Action<string, int> EndpointRequestCountChangedCallback;
+		private static Func<string, bool> GlobalResponsePreprocessorCallback;
 
 		/// <summary>
 		/// Stores statistical data of requests send through this <see cref="WordpressClient"/> Instance.
@@ -68,7 +68,7 @@ namespace WordpressSharp {
 		/// <param name="threadSafe">Set as false if current instance should allow unlimited number of concurrent connections at a time.</param>
 		/// <param name="maxConcurrentRequestsPerInstance">The maximum concurrent connections for this instance.</param>
 		/// <param name="timeout">The timeout period. After this timeout is passed, the request will be considered as a failure and terminated with a error code.</param>
-		public WordpressClient(string baseUrl = "http://demo.wp-api.org/wp-json/", string path = "wp/v2", bool threadSafe = true, int maxConcurrentRequestsPerInstance = 10, int timeout = 60) {
+		public WordpressClient(string baseUrl, string path = "wp/v2", bool threadSafe = true, int maxConcurrentRequestsPerInstance = 10, int timeout = 60) {
 			BaseUrl = baseUrl ?? throw new ArgumentNullException(nameof(baseUrl));
 			UrlPath = path ?? throw new ArgumentNullException(nameof(path));
 			TIMEOUT = timeout;
@@ -141,7 +141,7 @@ namespace WordpressSharp {
 		/// <param name="processorFunc">The preprocessor function</param>
 		/// <returns><see cref="WordpressClient"/></returns>
 		public virtual WordpressClient WithGlobalResponseProcessor(Func<string, bool> processorFunc) {
-			GlobalResponsePreprocessorFunc = processorFunc;
+			GlobalResponsePreprocessorCallback = processorFunc;
 			return this;
 		}
 
@@ -188,22 +188,35 @@ namespace WordpressSharp {
 		}
 
 		public virtual WordpressClient WithEndpointStatisticDelegate(Action<string, int> statisticDelegate) {
-			EndpointRequestCountDelegate = statisticDelegate;
+			EndpointRequestCountChangedCallback = statisticDelegate;
 			return this;
 		}
+				
+		//public virtual async IAsyncEnumerable<Response<Category>> GetCategoriesAsync(Func<RequestBuilder, Request> request, IProgress<double> progressReport = default) {
+		//	Request requestContainer = request.Invoke(new RequestBuilder().WithBaseAndEndpoint(Path.Combine(BaseUrl, UrlPath), Path.Combine("categories")));
+		//	Response<Category[]> result = await ExecuteAsync<Category[]>(requestContainer).ConfigureAwait(false);
 
-		public virtual async IAsyncEnumerable<Response<Category>> GetCategoriesAsync(Func<RequestBuilder, Request> request, IProgress<int> progressReport = default) {
+		//	if (!result.Status) {
+		//		yield return Response.CloneFrom<Category>(result.Value[i], result);
+		//	}
+
+		//	for (int i = 0; i < result.Value.Length; i++) {
+		//		if (progressReport != null) {
+		//			progressReport.Report(CalculateProgress(i, result.Value.Length));
+		//		}
+
+		//		yield return Response.CloneFrom<Category>(result.Value[i], result);
+		//	}
+		//}
+
+		public virtual async Task<Response<IEnumerable<Category>>> _GetCategoriesAsync(Func<RequestBuilder, Request> request, IProgress<double> progressReport = default) {
 			Request requestContainer = request.Invoke(new RequestBuilder().WithBaseAndEndpoint(Path.Combine(BaseUrl, UrlPath), Path.Combine("categories")));
-			Response<Category[]> result = await ExecuteAsync<Category[]>(requestContainer).ConfigureAwait(false);
+			return await ExecuteAsync<IEnumerable<Category>>(requestContainer).ConfigureAwait(false);
+		}
 
-			if (!result.Status) {
-				yield break;
-			}
-
-			for (int i = 0; i < result.Value.Length; i++) {
-				progressReport?.Report(i);
-				yield return Response.CloneFrom<Category>(result.Value[i], result);
-			}
+		public virtual async Task<IReadOnlyCollection<Category>> GetCategoriesAsync(Func<RequestBuilder, Request> request, Action<ResponseWrapper> onResponseCallback, IProgress<double> progressReport = default) {			
+			Request requestContainer = request.Invoke(new RequestBuilder().WithBaseAndEndpoint(Path.Combine(BaseUrl, UrlPath), Path.Combine("categories")));
+			return await GetRequestAsync<IReadOnlyCollection<Category>>(requestContainer, onResponseCallback).ConfigureAwait(false);
 		}
 
 		public virtual async IAsyncEnumerable<Response<Post>> GetPostsAsync(Func<RequestBuilder, Request> request, IProgress<double> progressReport = default) {
@@ -334,7 +347,7 @@ namespace WordpressSharp {
 					EndpointRequestCount[requestEndpoint]++;
 				}
 
-				Task.Run(() => EndpointRequestCountDelegate?.Invoke(requestEndpoint, EndpointRequestCount[requestEndpoint]));
+				Task.Run(() => EndpointRequestCountChangedCallback?.Invoke(requestEndpoint, EndpointRequestCount[requestEndpoint]));
 			}
 			catch { }
 		}
@@ -417,7 +430,7 @@ namespace WordpressSharp {
 
 						await Task.Run(() => EndpointStatistics(request.Endpoint)).ConfigureAwait(false);
 
-						if (GlobalResponsePreprocessorFunc != null && !GlobalResponsePreprocessorFunc.Invoke(responseContent)) {
+						if (GlobalResponsePreprocessorCallback != null && !GlobalResponsePreprocessorCallback.Invoke(responseContent)) {
 							SetResponseContainerValues(ref watch, ref responseContainer, response);
 							responseContainer.SetMessage($"Request aborted with ({(int) response.StatusCode}) [Globally defined validation restricted] status.", "----------------------------", responseContent, "----------------------------");
 							return responseContainer.SetValue(default);
@@ -449,6 +462,87 @@ namespace WordpressSharp {
 				SetResponseContainerValues(ref watch, ref responseContainer, null);
 				responseContainer.SetMessage($"Request exceptioned occured. ({e.HResult}) [{e.Message}]", "----------------------------", e.Message, "----------------------------");
 				return responseContainer.SetException(e).SetValue(default);
+			}
+			finally {
+				if (Threadsafe) {
+					RequestSync.Release();
+				}
+			}
+		}
+
+		internal virtual async Task<T> GetRequestAsync<T>(Request request, Action<ResponseWrapper> responseCallback, CancellationToken cancellationToken = default) {
+			if (request == null || !request.IsRequestExecutable) {
+				return default;
+			}
+
+			if (Threadsafe) {
+				await RequestSync.WaitAsync().ConfigureAwait(false);
+			}
+
+			ResponseWrapper responseContainer = new ResponseWrapper();
+			Stopwatch watch = new Stopwatch();
+
+			try {
+				using (HttpRequestMessage httpRequest = new HttpRequestMessage(HttpMethod.Get, request.RequestUri)) {
+					if (request.Token != default) {
+						cancellationToken = request.Token;
+					}
+
+					if (cancellationToken == default) {
+						cancellationToken = new CancellationTokenSource(TimeSpan.FromSeconds(TIMEOUT)).Token;
+					}
+
+					watch.Start();
+					using (HttpResponseMessage response = await Client.SendAsync(httpRequest, cancellationToken).ConfigureAwait(false)) {
+						string responseContent = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+						if (!response.IsSuccessStatusCode || string.IsNullOrEmpty(responseContent) || responseContent.Length <= 4) {
+							SetResponseContainerValues(ref watch, ref responseContainer, response);
+							responseContainer.Message = string.Join("\n", $"Request failed with ({(int) response.StatusCode}) [{response.StatusCode}] status.", "----------------------------", responseContent, "----------------------------");
+							responseCallback?.Invoke(responseContainer);
+							return default;
+						}
+
+						await Task.Run(() => EndpointStatistics(request.Endpoint)).ConfigureAwait(false);
+
+						if (GlobalResponsePreprocessorCallback != null && !GlobalResponsePreprocessorCallback.Invoke(responseContent)) {
+							SetResponseContainerValues(ref watch, ref responseContainer, response);
+							responseContainer.Message = string.Join("\n", $"Request aborted with ({(int) response.StatusCode}) [Globally defined validation restricted] status.", "----------------------------", responseContent, "----------------------------");
+							responseCallback?.Invoke(responseContainer);
+							return default;
+						}
+
+						request.Callback?.ResponseCallback?.Invoke(responseContent);
+
+						if (request.ShouldValidateResponse && !request.ValidationDelegate.Invoke(responseContent)) {
+							SetResponseContainerValues(ref watch, ref responseContainer, response);
+							responseContainer.Message = string.Join("\n", $"Request aborted with ({(int) response.StatusCode}) [User defined validation restricted] status.", "----------------------------", responseContent, "----------------------------");
+							responseCallback?.Invoke(responseContainer);
+							return default;
+						}
+
+						SetResponseContainerValues(ref watch, ref responseContainer, response);
+						responseContainer.Message = string.Join("\n", $"Request success with ({(int) response.StatusCode}) [{response.StatusCode}] status.", "----------------------------", responseContent, "----------------------------");
+						responseCallback?.Invoke(responseContainer);
+						return JsonConvert.DeserializeObject<T>(responseContent);
+					}
+				}
+			}
+			catch (OperationCanceledException oc) {
+				request.Callback?.RequestCallback?.Invoke(new RequestStatus(false, "Operation cancelled. (passed timeout limit)"));
+				SetResponseContainerValues(ref watch, ref responseContainer, null);
+				responseContainer.Message = string.Join("\n", $"Request exception occured. ({oc.HResult}) [Passed timeout limit]", "----------------------------", oc.Message, "----------------------------");
+				responseContainer.RequestException = oc;
+				responseCallback?.Invoke(responseContainer);
+				return default;
+			}
+			catch (Exception e) {
+				request.Callback?.UnhandledExceptionCallback?.Invoke(e);
+				request.Callback?.RequestCallback?.Invoke(new RequestStatus(false, e.Message));
+				SetResponseContainerValues(ref watch, ref responseContainer, null);
+				responseContainer.Message = string.Join("\n", $"Request exception occured. ({e.HResult}) [{e.Message}]", "----------------------------", e.StackTrace, "----------------------------");
+				responseContainer.RequestException = e;
+				responseCallback?.Invoke(responseContainer);
+				return default;
 			}
 			finally {
 				if (Threadsafe) {
@@ -490,7 +584,7 @@ namespace WordpressSharp {
 
 						await Task.Run(() => EndpointStatistics(request.Endpoint)).ConfigureAwait(false);
 
-						if (GlobalResponsePreprocessorFunc != null && !GlobalResponsePreprocessorFunc.Invoke(responseContent)) {
+						if (GlobalResponsePreprocessorCallback != null && !GlobalResponsePreprocessorCallback.Invoke(responseContent)) {
 							SetResponseContainerValues(ref watch, ref responseContainer, response);
 							responseContainer.SetMessage($"Request aborted with ({(int) response.StatusCode}) [Globally defined validation restricted] status.", "----------------------------", responseContent, "----------------------------");
 							return responseContainer.SetValue(default);
@@ -504,6 +598,8 @@ namespace WordpressSharp {
 							return responseContainer.SetValue(default);
 						}
 
+						SetResponseContainerValues(ref watch, ref responseContainer, response);
+						responseContainer.SetMessage($"Request success with ({(int) response.StatusCode}) [{response.StatusCode}] status.", "----------------------------", responseContent, "----------------------------");
 						return responseContainer.SetValue(JsonConvert.DeserializeObject<T>(responseContent));
 					}
 				}
@@ -526,6 +622,41 @@ namespace WordpressSharp {
 					RequestSync.Release();
 				}
 			}
+		}
+
+		internal virtual void SetResponseContainerValues(ref Stopwatch watch, ref ResponseWrapper responseContainer, HttpResponseMessage response) {
+			if (watch == null || responseContainer == null) {
+				return;
+			}
+
+			if (watch.IsRunning) {
+				watch.Stop();
+			}
+
+			try {
+				responseContainer.Duration = watch.Elapsed;
+				Dictionary<string, string> headerCollection = new Dictionary<string, string>();
+
+				if (response != null) {
+					if (response.Headers != null && response.Headers.Any()) {
+						foreach (KeyValuePair<string, IEnumerable<string>> header in response.Headers) {
+							string headerName = header.Key;
+							string headerContent = string.Join(",", header.Value.ToArray());
+							headerCollection.TryAdd(headerName, headerContent);
+						}
+					}
+
+					responseContainer.Status = response.IsSuccessStatusCode;
+					responseContainer.StatusCode = response.StatusCode;
+				}
+				else {
+					responseContainer.Status = false;
+					responseContainer.StatusCode = HttpStatusCode.Forbidden;
+				}
+
+				responseContainer.Headers = headerCollection;
+			}
+			catch { return; }
 		}
 
 		protected virtual void SetResponseContainerValues<T>(ref Stopwatch watch, ref Response<T> responseContainer, HttpResponseMessage response) {

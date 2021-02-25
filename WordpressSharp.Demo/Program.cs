@@ -9,7 +9,7 @@ using static WordpressSharp.Models.Requests.RequestBuilder;
 namespace WordpressSharp.Demo {
 	internal class Program {
 		static async Task<int> Main(string[] args) {
-			WordpressClient client = new WordpressClient("https://www.pathanamthittamedia.com/wp-json/tes/", threadSafe: false, maxConcurrentRequestsPerInstance: 10, timeout: 60);
+			WordpressClient client = new WordpressClient("test", threadSafe: false, maxConcurrentRequestsPerInstance: 10, timeout: 60);
 			Response<IEnumerable<Category>> result = await client._GetCategoriesAsync((requestBuilder) => requestBuilder.WithPerPage(100).Create()).ConfigureAwait(false);
 
 			if (!result.Status) {

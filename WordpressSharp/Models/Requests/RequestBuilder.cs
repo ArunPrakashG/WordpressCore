@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Threading;
+using static WordpressSharp.Models.Requests.Enums;
 
 namespace WordpressSharp.Models.Requests {
 	public class RequestBuilder {
@@ -227,8 +228,13 @@ namespace WordpressSharp.Models.Requests {
 			return this;
 		}
 
-		public RequestBuilder WithFormBody(Func<PostObjectBuilder, PostObjectBuilder> formBodyBuilder) {
+		public RequestBuilder WithPostBody(Func<PostObjectBuilder, PostObjectBuilder> formBodyBuilder) {
 			FormBody = formBodyBuilder.Invoke(new PostObjectBuilder()).Create();
+			return this;
+		}
+
+		public RequestBuilder WithMediaBody(Func<MediaObjectBuilder, MediaObjectBuilder> formBodyBuilder) {
+			FormBody = formBodyBuilder.Invoke(new MediaObjectBuilder()).Create();
 			return this;
 		}
 
@@ -237,7 +243,7 @@ namespace WordpressSharp.Models.Requests {
 			return this;
 		}
 
-		public RequestBuilder WithHttpMethod(HttpMethod method) {
+		internal RequestBuilder WithHttpMethod(HttpMethod method) {
 			Method = method;
 			return this;
 		}
@@ -247,7 +253,7 @@ namespace WordpressSharp.Models.Requests {
 			return this;
 		}
 
-		public RequestBuilder WithCancelleationToken(CancellationToken token) {
+		public RequestBuilder WithCancellationToken(CancellationToken token) {
 			Token = token;
 			return this;
 		}
@@ -463,44 +469,6 @@ namespace WordpressSharp.Models.Requests {
 			}
 
 			return this;
-		}
-
-		public enum Scope {
-			View,
-			Embed,
-			Edit
-		}
-
-		public enum TaxonomyRelation {
-			And,
-			Or
-		}
-
-		public enum OrderBy {
-			Date,
-			Author,
-			Id,
-			Include,
-			Modified,
-			Parent,
-			Relevance,
-			Slug,
-			IncludeSlugs,
-			Title,
-			Email,
-			Url,
-			Name
-		}
-
-		public enum Status {
-			Published,
-			Draft,
-			Trash
-		}
-
-		public enum Order {
-			Ascending,
-			Descending
 		}
 	}
 }

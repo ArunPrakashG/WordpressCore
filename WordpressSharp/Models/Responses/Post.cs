@@ -69,7 +69,10 @@ namespace WordpressSharp.Models.Responses {
 		[JsonProperty("tags")]
 		public int[] Tags { get; set; }
 
-		[JsonProperty("author_meta")]
+		/// <summary>
+		/// This is an extra field added using <see href="https://wordpress.org/plugins/wp-rest-api-user-meta/"/> plugin.
+		/// </summary>
+		[JsonProperty("author_meta")]		
 		public AuthorMeta AuthorMetaData { get; set; }
 
 		[JsonProperty("_embedded")]

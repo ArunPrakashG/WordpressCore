@@ -4,44 +4,46 @@ using System.Net;
 using System.Text;
 
 namespace WordpressSharp.Models.Responses {
-	internal static class Response {
-		internal static Response<T> CloneFrom<T>(T responseValue, Response<T[]> result) {
-			if (responseValue == null) {
-				return default;
-			}
-
-			Response<T> resultContainer = new Response<T>(responseValue);
-			resultContainer.SetHeaders(result.Headers);
-			resultContainer.SetDuration(result.Duration);
-			resultContainer.SetStatus(result.Status);
-			resultContainer.SetStatusCode(result.StatusCode);
-			resultContainer.SetMessage(result.Message);
-			return resultContainer;
-		}
-	}
-
-	public class ResponseWrapper {
-		public Dictionary<string, string> Headers;
-		public bool Status;
-		public HttpStatusCode StatusCode;
-		public TimeSpan Duration;
-		public Exception RequestException;
-		public string Message;
-	}
-
+	/// <summary>
+	/// A container for all responses returned from the api.
+	/// <para>Wraps responses and provides status and error messages to the caller.</para>
+	/// </summary>
+	/// <typeparam name="T"></typeparam>
 	public class Response<T> {
+		/// <summary>
+		/// The response Value.
+		/// </summary>
 		public T Value { get; private set; }
 
+		/// <summary>
+		/// The headers of the response.
+		/// </summary>
 		public Dictionary<string, string> Headers { get; private set; }
 
+		/// <summary>
+		/// The status of the request.
+		/// <para>True when success, false when failed.</para>
+		/// </summary>
 		public bool Status { get; private set; }
 
+		/// <summary>
+		/// The <see cref="HttpStatusCode"/> of the response.
+		/// </summary>
 		public HttpStatusCode StatusCode { get; private set; }
 
+		/// <summary>
+		/// The time taken to receive the response from the API. as <see cref="TimeSpan"/> instance.
+		/// </summary>
 		public TimeSpan Duration { get; private set; }
 
+		/// <summary>
+		/// Stores any exception which occured during the request or while parsing the response.
+		/// </summary>
 		public Exception RequestException { get; private set; }
 
+		/// <summary>
+		/// The error message, if any.
+		/// </summary>
 		public string Message { get; private set; }
 
 		internal Response(T value) => Value = value;

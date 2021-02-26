@@ -2,6 +2,9 @@ using Newtonsoft.Json;
 
 namespace WordpressSharp.Models.Responses {
 	public abstract class BaseResponse {
+		/// <summary>
+		/// This is an extra field added using a wordpress plugin.
+		/// </summary>
 		[JsonProperty("featured_image_url")]
 		public string FeaturedImageUrl { get; set; }
 

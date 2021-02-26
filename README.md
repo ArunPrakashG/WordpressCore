@@ -81,3 +81,8 @@ CookieContainer container = new CookieContainer();
 
 			}
 ```
+
+## Goals
+* Implement rest of the endpoints of REST API
+* Reduce memory consumption further internally
+* Replace `IAsyncEnumerable` with an alternative to support more platforms

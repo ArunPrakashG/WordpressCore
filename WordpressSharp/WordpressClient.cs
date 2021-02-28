@@ -169,16 +169,31 @@ namespace WordpressSharp {
 			return this;
 		}
 
+		/// <summary>
+		/// Replace internal cookie container with the referenced cookie container
+		/// </summary>
+		/// <param name="container">The cookie container</param>
+		/// <returns></returns>
 		public virtual WordpressClient WithCookieContainer(ref CookieContainer container) {
 			Cookies = container ?? new CookieContainer();
 			return this;
 		}
 
+		/// <summary>
+		/// Replace internal cookie container with the specified cookie container
+		/// </summary>
+		/// <param name="container">The cookie container</param>
+		/// <returns></returns>
 		public virtual WordpressClient WithCookieContainer(CookieContainer container) {
 			Cookies = container ?? new CookieContainer();
 			return this;
 		}
 
+		/// <summary>
+		/// Adds default request headers to pass on all requests passed through this client
+		/// </summary>
+		/// <param name="pairs"></param>
+		/// <returns></returns>
 		public virtual WordpressClient WithDefaultRequestHeaders(params KeyValuePair<string, string>[] pairs) {
 			for (int i = 0; i < pairs.Length; i++) {
 				Client.DefaultRequestHeaders.Add(pairs[i].Key, pairs[i].Value);
@@ -187,11 +202,21 @@ namespace WordpressSharp {
 			return this;
 		}
 
+		/// <summary>
+		/// Register an event to receive endpoint statistics.
+		/// </summary>
+		/// <param name="statisticDelegate"></param>
+		/// <returns></returns>
 		public virtual WordpressClient WithEndpointStatisticDelegate(Action<string, int> statisticDelegate) {
 			EndpointRequestCountChangedCallback = statisticDelegate;
 			return this;
 		}
 
+		/// <summary>
+		/// Gets all categories formatted using the request builder.
+		/// </summary>
+		/// <param name="request">The request builder</param>
+		/// <returns></returns>
 		public virtual async Task<Response<IEnumerable<Category>>> GetCategoriesAsync(Func<RequestBuilder, Request> request) {
 			Request requestContainer = request.Invoke(RequestBuilder.WithBuilder().WithBaseAndEndpoint(Path.Combine(BaseUrl, UrlPath), Path.Combine("categories")));
 			return await ExecuteAsync<IEnumerable<Category>>(requestContainer).ConfigureAwait(false);

@@ -9,9 +9,12 @@ using WordpressSharp.Models.Responses.JWT;
 using static WordpressSharp.WordpressClient;
 
 namespace WordpressSharp {
+	/// <summary>
+	/// Class which handles authorization system
+	/// </summary>
 	public class WordpressAuthorization {
-		public static WordpressAuthorization Default => new WordpressAuthorization(string.Empty, string.Empty, type: AuthorizationType.NoAuth);
-		public bool IsDefault => string.IsNullOrEmpty(UserName) || string.IsNullOrEmpty(Password);
+		internal static WordpressAuthorization Default => new WordpressAuthorization(string.Empty, string.Empty, type: AuthorizationType.NoAuth);
+		internal bool IsDefault => string.IsNullOrEmpty(UserName) || string.IsNullOrEmpty(Password);
 		internal readonly string UserName;
 		internal readonly string Password;
 		internal readonly string JwtToken;
@@ -20,6 +23,13 @@ namespace WordpressSharp {
 		internal string EncryptedAccessToken;
 		private bool HasValidatedOnce;
 
+		/// <summary>
+		/// Instantiate an authorization handler for requests.
+		/// </summary>
+		/// <param name="userName">The user name</param>
+		/// <param name="passWord">The password</param>
+		/// <param name="jwtToken">The JWT Token if it is already known.</param>
+		/// <param name="type">The type of authorization method to use.</param>
 		public WordpressAuthorization(string userName, string passWord, string jwtToken = null, AuthorizationType type = AuthorizationType.NoAuth) {
 			UserName = userName;
 			Password = passWord;

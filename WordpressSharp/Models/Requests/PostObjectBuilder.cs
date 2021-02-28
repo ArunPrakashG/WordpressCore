@@ -1,11 +1,16 @@
 using System;
 using System.Collections.Generic;
-using System.Text;
+using System.IO;
+using System.Linq;
+using System.Net.Http;
+using System.Threading.Tasks;
+using static WordpressSharp.Models.Requests.Enums;
 
 namespace WordpressSharp.Models.Requests {
+	/// <summary>
+	/// Builder used to build CreatePost request
+	/// </summary>
 	public class PostObjectBuilder {
-		private Dictionary<string, string> FormData;
-
 		private string Content;
 		private string Title;
 		private DateTime PostDate;
@@ -22,106 +27,182 @@ namespace WordpressSharp.Models.Requests {
 		private int[] Categories;
 		private int[] Tags;
 
-		public PostObjectBuilder() { }
+		internal PostObjectBuilder() { }
 
 		internal Dictionary<string, string> Create() {
-			FormData = new Dictionary<string, string>();
+			Dictionary<string, string>  formData = new Dictionary<string, string>();
 
 			if (!string.IsNullOrEmpty(Content)) {
-				FormData.Add("content", Content);
+				formData.Add("content", Content);
 			}
 
 			if (!string.IsNullOrEmpty(Title)) {
-				FormData.Add("title", Title);
+				formData.Add("title", Title);
 			}
 
 			if (!string.IsNullOrEmpty(Slug)) {
-				FormData.Add("slug", Slug);
+				formData.Add("slug", Slug);
 			}
 
 			if (!string.IsNullOrEmpty(Password)) {
-				FormData.Add("password", Password);
+				formData.Add("password", Password);
 			}
 
-			if(AuthorId > 0) {
-				FormData.Add("author", AuthorId.ToString());
+			if (AuthorId > 0) {
+				formData.Add("author", AuthorId.ToString());
 			}
 
 			if (!string.IsNullOrEmpty(Excerpt)) {
-				FormData.Add("excerpt", Excerpt);
+				formData.Add("excerpt", Excerpt);
 			}
 
-			if(FeaturedImageId > 0) {
-				FormData.Add("featured_media", FeaturedImageId.ToString());
-			}			
+			if (FeaturedImageId > 0) {
+				formData.Add("featured_media", FeaturedImageId.ToString());
+			}
 
 			if (Sticky) {
-				FormData.Add("sticky", "1");
+				formData.Add("sticky", "1");
 			}
 
-			if(Categories != null && Categories.Length > 0) {
-				FormData.Add("categories", string.Join(',', Categories));
+			if (Categories != null && Categories.Length > 0) {
+				formData.Add("categories", string.Join(',', Categories));
 			}
 
-			if(Tags != null && Tags.Length > 0) {
-				FormData.Add("tags", string.Join(',', Tags));
+			if (Tags != null && Tags.Length > 0) {
+				formData.Add("tags", string.Join(',', Tags));
 			}
 
-			if(PostDate != DateTime.MinValue) {
-				FormData.Add("date", PostDate.ToString());
+			if (PostDate != DateTime.MinValue) {
+				formData.Add("date", PostDate.ToString());
 			}
 
-			FormData.Add("comment_status", CommandStatus.ToString().ToLower());
-			FormData.Add("ping_status", PingStatus.ToString().ToLower());
-			FormData.Add("format", Format.ToString().ToLower());			
-			FormData.Add("status", Status.ToString().ToLower());
-			return FormData;
+			formData.Add("comment_status", CommandStatus.ToString().ToLower());
+			formData.Add("ping_status", PingStatus.ToString().ToLower());
+			formData.Add("format", Format.ToString().ToLower());
+			formData.Add("status", Status.ToString().ToLower());
+			return formData;
 		}
 
+		/// <summary>
+		/// Sets the title of the post
+		/// </summary>
+		/// <param name="title"></param>
+		/// <returns></returns>
 		public PostObjectBuilder WithTitle(string title) {
 			Title = title;
 			return this;
 		}
 
+		/// <summary>
+		/// Sets the content of the post
+		/// </summary>
+		/// <param name="content"></param>
+		/// <returns></returns>
 		public PostObjectBuilder WithContent(string content) {
 			Content = content;
 			return this;
 		}
 
+		[Obsolete]
+		/// <summary>
+		/// Sets the published date of the post (Bugged)
+		/// </summary>
+		/// <param name="dateTime"></param>
+		/// <returns></returns>
 		public PostObjectBuilder WithDate(DateTime dateTime) {
 			PostDate = dateTime;
 			return this;
 		}
 
+		/// <summary>
+		/// Sets the slug of the post
+		/// </summary>
+		/// <param name="slug"></param>
+		/// <returns></returns>
 		public PostObjectBuilder WithSlug(string slug) {
 			Slug = slug;
 			return this;
 		}
 
+		/// <summary>
+		/// Sets the status of the post
+		/// </summary>
+		/// <param name="status"></param>
+		/// <returns></returns>
 		public PostObjectBuilder WithStatus(PostStatus status) {
 			Status = status;
 			return this;
 		}
 
 		// TODO: Implement automatic password generator and return the generated password to caller using out parameter
+		/// <summary>
+		/// Sets the password for the post
+		/// </summary>
+		/// <param name="password"></param>
+		/// <returns></returns>
 		public PostObjectBuilder WithPassword(string password) {
 			Password = password;
 			return this;
 		}
 
+		/// <summary>
+		/// Sets the author of the post
+		/// </summary>
+		/// <param name="authorId"></param>
+		/// <returns></returns>
 		public PostObjectBuilder WithAuthor(int authorId) {
 			AuthorId = authorId;
 			return this;
 		}
 
+		/// <summary>
+		/// Sets the excerpt of the post
+		/// </summary>
+		/// <param name="excerpt"></param>
+		/// <returns></returns>
 		public PostObjectBuilder WithExcerpt(string excerpt) {
 			Excerpt = excerpt;
 			return this;
 		}
 
+		/// <summary>
+		/// Sets the featured image to be used for the post
+		/// </summary>
+		/// <param name="featuredImageId"></param>
+		/// <returns></returns>
 		public PostObjectBuilder WithFeaturedImage(int featuredImageId) {
 			FeaturedImageId = featuredImageId;
 			return this;
+		}
+
+		/// <summary>
+		/// Sets the featured image of the post by first uploading the image on the path and then using its returned imageId
+		/// </summary>
+		/// <param name="client"></param>
+		/// <param name="imagePath"></param>
+		/// <returns></returns>
+		public async Task<PostObjectBuilder> WithFeaturedImage(WordpressClient client, string imagePath) {
+			if (client == null) {
+				throw new ArgumentNullException(nameof(client));
+			}
+
+			if (string.IsNullOrEmpty(imagePath)) {
+				throw new ArgumentNullException(nameof(imagePath));
+			}
+
+			if (!File.Exists(imagePath)) {
+				throw new FileNotFoundException($"{imagePath} not found");
+			}
+
+			using (StreamContent content = new(File.OpenRead(imagePath))) {
+				string fileName = Path.GetFileName(imagePath);
+				string extension = fileName.Split('.').Last();
+
+				content.Headers.TryAddWithoutValidation("Content-Type", Utilites.GetMIMETypeFromExtension(extension));
+				content.Headers.TryAddWithoutValidation("Content-Disposition", $"attachment; filename={fileName}");
+				await client.CreateMediaAsync()
+				return (await _httpHelper.PostRequest<MediaItem>($"{_defaultPath}{_methodPath}", content).ConfigureAwait(false)).Item1;
+			}
 		}
 
 		public PostObjectBuilder WithCommandStatus(CommandStatusValue commandStatus) {
@@ -152,37 +233,6 @@ namespace WordpressSharp.Models.Requests {
 		public PostObjectBuilder WithTags(params int[] tags) {
 			Tags = tags;
 			return this;
-		}
-
-		public enum PostStatus {
-			Publish,
-			Future,
-			Draft,
-			Pending,
-			Private
-		}
-
-		public enum CommandStatusValue {
-			Open,
-			Closed
-		}
-
-		public enum PingStatusValue {
-			Open,
-			Closed
-		}
-
-		public enum PostFormat {
-			Standard,
-			Aside,
-			Chat,
-			Gallery,
-			Link,
-			Image,
-			Quote,
-			Status,
-			Video,
-			Audio
 		}
 	}
 }

@@ -142,7 +142,6 @@ namespace WordpressSharp.Models.Requests {
 			return this;
 		}
 
-		// TODO: Implement automatic password generator and return the generated password to caller using out parameter
 		/// <summary>
 		/// Sets the password for the post
 		/// </summary>

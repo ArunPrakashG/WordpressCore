@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -21,6 +22,13 @@ namespace WordpressSharp {
 			}
 
 			return Convert.ToBase64String(Encoding.UTF8.GetBytes(plainText));
+		}
+
+		internal static string GenerateToken(int length) {
+			using RNGCryptoServiceProvider cryptRNG = new();
+			byte[] tokenBuffer = new byte[length];
+			cryptRNG.GetBytes(tokenBuffer);
+			return Convert.ToBase64String(tokenBuffer);
 		}
 
 		internal static HttpRequestMessage TryAddHeaders(this HttpRequestMessage request, IDictionary<string, string> headers) {

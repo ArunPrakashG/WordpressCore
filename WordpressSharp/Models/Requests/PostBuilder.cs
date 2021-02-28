@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 using WordpressSharp.Interfaces;
@@ -39,7 +38,7 @@ namespace WordpressSharp.Models.Requests {
 		}
 
 		public HttpContent Create() {
-			Dictionary<string, string>  formData = new Dictionary<string, string>();
+			Dictionary<string, string> formData = new Dictionary<string, string>();
 
 			if (!string.IsNullOrEmpty(Content)) {
 				formData.Add("content", Content);
@@ -155,6 +154,18 @@ namespace WordpressSharp.Models.Requests {
 		}
 
 		/// <summary>
+		/// Generates an random password of specified length and returns it using out parameter.
+		/// </summary>
+		/// <param name="generatedPassword">The generated password</param>
+		/// <param name="passwordLength">The password length. Default is 13</param>
+		/// <returns></returns>
+		public PostBuilder WithPassword(out string generatedPassword, int passwordLength = 13) {
+			Password = Utilites.GenerateToken(passwordLength);
+			generatedPassword = Password;
+			return this;
+		}
+
+		/// <summary>
 		/// Sets the author of the post
 		/// </summary>
 		/// <param name="authorId"></param>
@@ -203,7 +214,7 @@ namespace WordpressSharp.Models.Requests {
 				throw new FileNotFoundException(nameof(imagePath));
 			}
 
-			var featuredMedia = await client.CreateMediaAsync((builder) => builder.WithBody<MediaBuilder, HttpContent>((media) => media.WithFile(imagePath).Create()).Create());
+			Responses.Response<Responses.Media> featuredMedia = await client.CreateMediaAsync((builder) => builder.WithBody<MediaBuilder, HttpContent>((media) => media.WithFile(imagePath).Create()).Create());
 			FeaturedImageId = featuredMedia.Status ? featuredMedia.Value.Id : 0;
 			return this;
 		}

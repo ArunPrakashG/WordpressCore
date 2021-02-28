@@ -26,6 +26,7 @@ namespace WordpressSharp {
 		private HttpClientHandler _clientHandler;
 		private WordpressAuthorization LoginDetails;
 		private CookieContainer Cookies;
+		private JsonSerializerSettings JsonSerializerSettings;
 		private SemaphoreSlim RequestSync;
 		private static Action<string, int> EndpointRequestCountChangedCallback;
 		private static Func<string, bool> GlobalResponsePreprocessorCallback;
@@ -65,21 +66,24 @@ namespace WordpressSharp {
 		/// </summary>
 		/// <param name="baseUrl">The base url for Wordpress REST api endpoint. Example: http://demo.wp-api.org/wp-json/</param>
 		/// <param name="path">REST API Path</param>
-		/// <param name="threadSafe">Set as false if current instance should allow unlimited number of concurrent connections at a time.</param>
-		/// <param name="maxConcurrentRequestsPerInstance">The maximum concurrent connections for this instance.</param>
+		/// <param name="maxConcurrentRequestsPerInstance">The maximum concurrent connections for this instance. Set as 0 to disable request limits</param>
 		/// <param name="timeout">The timeout period. After this timeout is passed, the request will be considered as a failure and terminated with a error code.</param>
-		public WordpressClient(string baseUrl, string path = "wp/v2", bool threadSafe = true, int maxConcurrentRequestsPerInstance = 10, int timeout = 60) {
+		public WordpressClient(string baseUrl, string path = "wp/v2", int maxConcurrentRequestsPerInstance = 10, int timeout = 60) {
 			BaseUrl = baseUrl ?? throw new ArgumentNullException(nameof(baseUrl));
 			UrlPath = path ?? throw new ArgumentNullException(nameof(path));
 			TIMEOUT = timeout;
-			Threadsafe = threadSafe;
 			MAX_CONCURRENT_CONNECTION_PER_INSTANCE = maxConcurrentRequestsPerInstance;
+			Threadsafe = maxConcurrentRequestsPerInstance > 0;
 			RequestSync = Threadsafe ? new SemaphoreSlim(1, MAX_CONCURRENT_CONNECTION_PER_INSTANCE) : null;
 			Cookies = new CookieContainer();
 
 			if (!Uri.TryCreate(baseUrl, UriKind.RelativeOrAbsolute, out Uri _)) {
 				throw new ArgumentException($"{nameof(baseUrl)} url is invalid.");
 			}
+
+			JsonSerializerSettings = new JsonSerializerSettings() {
+				MissingMemberHandling = MissingMemberHandling.Ignore
+			};
 		}
 
 		/// <summary>
@@ -140,7 +144,7 @@ namespace WordpressSharp {
 		/// </summary>
 		/// <param name="processorFunc">The preprocessor function</param>
 		/// <returns><see cref="WordpressClient"/></returns>
-		public virtual WordpressClient WithGlobalResponseProcessor(Func<string, bool> processorFunc) {
+		public WordpressClient WithGlobalResponseProcessor(Func<string, bool> processorFunc) {
 			GlobalResponsePreprocessorCallback = processorFunc;
 			return this;
 		}
@@ -150,7 +154,7 @@ namespace WordpressSharp {
 		/// </summary>
 		/// <param name="userAgent">The UserAgent</param>
 		/// <returns><see cref="WordpressClient"/></returns>
-		public virtual WordpressClient WithDefaultUserAgent(string userAgent) {
+		public  WordpressClient WithDefaultUserAgent(string userAgent) {
 			Client.DefaultRequestHeaders.UserAgent.ParseAdd(userAgent);
 			return this;
 		}
@@ -160,7 +164,7 @@ namespace WordpressSharp {
 		/// </summary>
 		/// <param name="sync">The <see cref="SemaphoreSlim"/></param>
 		/// <returns><see cref="WordpressClient"/></returns>
-		public virtual WordpressClient WithRequestSemaphoreSlim(SemaphoreSlim sync) {
+		public WordpressClient WithRequestSemaphoreSlim(SemaphoreSlim sync) {
 			if (!Threadsafe) {
 				return this;
 			}
@@ -170,11 +174,21 @@ namespace WordpressSharp {
 		}
 
 		/// <summary>
+		/// Replace internal serializer settings with the specified settings.
+		/// </summary>
+		/// <param name="settings">The settings</param>
+		/// <returns></returns>
+		public WordpressClient WithJsonSerializerSetting(JsonSerializerSettings settings) {
+			JsonSerializerSettings = settings;
+			return this;
+		}
+
+		/// <summary>
 		/// Replace internal cookie container with the referenced cookie container
 		/// </summary>
 		/// <param name="container">The cookie container</param>
 		/// <returns></returns>
-		public virtual WordpressClient WithCookieContainer(ref CookieContainer container) {
+		public WordpressClient WithCookieContainer(ref CookieContainer container) {
 			Cookies = container ?? new CookieContainer();
 			return this;
 		}
@@ -184,7 +198,7 @@ namespace WordpressSharp {
 		/// </summary>
 		/// <param name="container">The cookie container</param>
 		/// <returns></returns>
-		public virtual WordpressClient WithCookieContainer(CookieContainer container) {
+		public WordpressClient WithCookieContainer(CookieContainer container) {
 			Cookies = container ?? new CookieContainer();
 			return this;
 		}
@@ -194,7 +208,7 @@ namespace WordpressSharp {
 		/// </summary>
 		/// <param name="pairs"></param>
 		/// <returns></returns>
-		public virtual WordpressClient WithDefaultRequestHeaders(params KeyValuePair<string, string>[] pairs) {
+		public WordpressClient WithDefaultRequestHeaders(params KeyValuePair<string, string>[] pairs) {
 			for (int i = 0; i < pairs.Length; i++) {
 				Client.DefaultRequestHeaders.Add(pairs[i].Key, pairs[i].Value);
 			}
@@ -207,7 +221,7 @@ namespace WordpressSharp {
 		/// </summary>
 		/// <param name="statisticDelegate"></param>
 		/// <returns></returns>
-		public virtual WordpressClient WithEndpointStatisticDelegate(Action<string, int> statisticDelegate) {
+		public WordpressClient WithEndpointStatisticDelegate(Action<string, int> statisticDelegate) {
 			EndpointRequestCountChangedCallback = statisticDelegate;
 			return this;
 		}
@@ -227,24 +241,9 @@ namespace WordpressSharp {
 			return await ExecuteAsync<IEnumerable<Post>>(requestContainer).ConfigureAwait(false);
 		}
 
-		public virtual async Task<Response<Post>> GetPostAsync(long postId, Func<RequestBuilder, Request> request) {
-			Request requestContainer = request.Invoke(RequestBuilder.WithBuilder().WithBaseAndEndpoint(Path.Combine(BaseUrl, UrlPath), Path.Combine("posts", postId.ToString())));
-			return await ExecuteAsync<Post>(requestContainer).ConfigureAwait(false);
-		}
-
-		public virtual async Task<Response<Post>> CreatePostAsync(Func<RequestBuilder, Request> request) {
-			Request requestContainer = request.Invoke(RequestBuilder.WithBuilder().WithBaseAndEndpoint(Path.Combine(BaseUrl, UrlPath), "posts").WithHttpMethod(HttpMethod.Post));
-			return await ExecuteAsync<Post>(requestContainer).ConfigureAwait(false);
-		}
-
 		public virtual async Task<Response<IEnumerable<User>>> GetUsersAsync(Func<RequestBuilder, Request> request) {
 			Request requestContainer = request.Invoke(RequestBuilder.WithBuilder().WithBaseAndEndpoint(Path.Combine(BaseUrl, UrlPath), Path.Combine("users")));
 			return await ExecuteAsync<IEnumerable<User>>(requestContainer).ConfigureAwait(false);
-		}
-
-		public virtual async Task<Response<User>> GetUserAsync(int userId, Func<RequestBuilder, Request> request) {
-			Request requestContainer = request.Invoke(RequestBuilder.WithBuilder().WithBaseAndEndpoint(Path.Combine(BaseUrl, UrlPath), Path.Combine("users", userId.ToString())));
-			return await ExecuteAsync<User>(requestContainer).ConfigureAwait(false);
 		}
 
 		public virtual async Task<Response<IEnumerable<Comment>>> GetCommentsAsync(Func<RequestBuilder, Request> request) {
@@ -252,24 +251,9 @@ namespace WordpressSharp {
 			return await ExecuteAsync<IEnumerable<Comment>>(requestContainer).ConfigureAwait(false);
 		}
 
-		public virtual async Task<Response<Comment>> GetCommentAsync(int commentId, Func<RequestBuilder, Request> request) {
-			Request requestContainer = request.Invoke(RequestBuilder.WithBuilder().WithBaseAndEndpoint(Path.Combine(BaseUrl, UrlPath), Path.Combine("comments", commentId.ToString())));
-			return await ExecuteAsync<Comment>(requestContainer).ConfigureAwait(false);
-		}
-
-		public virtual async Task<Response<IEnumerable<Media>>> GetMediasAsync(Func<RequestBuilder, Request> request, IProgress<double> progressReport = default) {
+		public virtual async Task<Response<IEnumerable<Media>>> GetMediasAsync(Func<RequestBuilder, Request> request) {
 			Request requestContainer = request.Invoke(RequestBuilder.WithBuilder().WithBaseAndEndpoint(Path.Combine(BaseUrl, UrlPath), Path.Combine("media")));
 			return await ExecuteAsync<IEnumerable<Media>>(requestContainer).ConfigureAwait(false);
-		}
-
-		public virtual async Task<Response<Media>> GetMediaAsync(int mediaId, Func<RequestBuilder, Request> request) {
-			Request requestContainer = request.Invoke(RequestBuilder.WithBuilder().WithBaseAndEndpoint(Path.Combine(BaseUrl, UrlPath), Path.Combine("media", mediaId.ToString())));
-			return await ExecuteAsync<Media>(requestContainer).ConfigureAwait(false);
-		}
-
-		public virtual async Task<Response<Media>> CreateMediaAsync(Func<RequestBuilder, Request> request) {
-			Request requestContainer = request.Invoke(RequestBuilder.WithBuilder().WithBaseAndEndpoint(Path.Combine(BaseUrl, UrlPath), "media").WithHttpMethod(HttpMethod.Post));
-			return await ExecuteAsync<Media>(requestContainer).ConfigureAwait(false);
 		}
 
 		public virtual async Task<Response<IEnumerable<Tag>>> GetTagsAsync(Func<RequestBuilder, Request> request) {
@@ -277,9 +261,39 @@ namespace WordpressSharp {
 			return await ExecuteAsync<IEnumerable<Tag>>(requestContainer).ConfigureAwait(false);
 		}
 
+		public virtual async Task<Response<Post>> GetPostAsync(long postId, Func<RequestBuilder, Request> request) {
+			Request requestContainer = request.Invoke(RequestBuilder.WithBuilder().WithBaseAndEndpoint(Path.Combine(BaseUrl, UrlPath), Path.Combine("posts", postId.ToString())));
+			return await ExecuteAsync<Post>(requestContainer).ConfigureAwait(false);
+		}				
+
+		public virtual async Task<Response<User>> GetUserAsync(int userId, Func<RequestBuilder, Request> request) {
+			Request requestContainer = request.Invoke(RequestBuilder.WithBuilder().WithBaseAndEndpoint(Path.Combine(BaseUrl, UrlPath), Path.Combine("users", userId.ToString())));
+			return await ExecuteAsync<User>(requestContainer).ConfigureAwait(false);
+		}		
+
+		public virtual async Task<Response<Comment>> GetCommentAsync(int commentId, Func<RequestBuilder, Request> request) {
+			Request requestContainer = request.Invoke(RequestBuilder.WithBuilder().WithBaseAndEndpoint(Path.Combine(BaseUrl, UrlPath), Path.Combine("comments", commentId.ToString())));
+			return await ExecuteAsync<Comment>(requestContainer).ConfigureAwait(false);
+		}
+
+		public virtual async Task<Response<Media>> GetMediaAsync(int mediaId, Func<RequestBuilder, Request> request) {
+			Request requestContainer = request.Invoke(RequestBuilder.WithBuilder().WithBaseAndEndpoint(Path.Combine(BaseUrl, UrlPath), Path.Combine("media", mediaId.ToString())));
+			return await ExecuteAsync<Media>(requestContainer).ConfigureAwait(false);
+		}		
+
 		public virtual async Task<Response<Tag>> GetTagAsync(int tagId, Func<RequestBuilder, Request> request) {
 			Request requestContainer = request.Invoke(RequestBuilder.WithBuilder().WithBaseAndEndpoint(Path.Combine(BaseUrl, UrlPath), Path.Combine("tags", tagId.ToString())));
 			return await ExecuteAsync<Tag>(requestContainer).ConfigureAwait(false);
+		}
+
+		public virtual async Task<Response<Post>> CreatePostAsync(Func<RequestBuilder, Request> request) {
+			Request requestContainer = request.Invoke(RequestBuilder.WithBuilder().WithBaseAndEndpoint(Path.Combine(BaseUrl, UrlPath), "posts").WithHttpMethod(HttpMethod.Post));
+			return await ExecuteAsync<Post>(requestContainer).ConfigureAwait(false);
+		}
+
+		public virtual async Task<Response<Media>> CreateMediaAsync(Func<RequestBuilder, Request> request) {
+			Request requestContainer = request.Invoke(RequestBuilder.WithBuilder().WithBaseAndEndpoint(Path.Combine(BaseUrl, UrlPath), "media").WithHttpMethod(HttpMethod.Post));
+			return await ExecuteAsync<Media>(requestContainer).ConfigureAwait(false);
 		}
 
 		private static void EndpointStatistics(string requestEndpoint) {
@@ -355,7 +369,7 @@ namespace WordpressSharp {
 					}
 
 					if (request.HasFormContent) {
-						httpRequest.Content = new FormUrlEncodedContent(request.FormBody);
+						httpRequest.Content = request.FormBody;
 					}
 
 					if (request.ShouldAuthorize && !await Utilites.AuthorizeRequest(httpRequest, Client, BaseUrl, request.Authorization, request.Callback).ConfigureAwait(false)) {
@@ -394,7 +408,7 @@ namespace WordpressSharp {
 
 						SetResponseContainerValues(ref watch, ref responseContainer, response);
 						responseContainer.SetMessage($"Request success with ({(int) response.StatusCode}) [{response.StatusCode}] status.", "----------------------------", responseContent, "----------------------------");
-						return responseContainer.SetValue(JsonConvert.DeserializeObject<T>(responseContent));
+						return responseContainer.SetValue(JsonConvert.DeserializeObject<T>(responseContent, JsonSerializerSettings));
 					}
 				}
 			}
@@ -467,7 +481,7 @@ namespace WordpressSharp {
 
 						SetResponseContainerValues(ref watch, ref responseContainer, response);
 						responseContainer.SetMessage($"Request success with ({(int) response.StatusCode}) [{response.StatusCode}] status.", "----------------------------", responseContent, "----------------------------");
-						return responseContainer.SetValue(JsonConvert.DeserializeObject<T>(responseContent));
+						return responseContainer.SetValue(JsonConvert.DeserializeObject<T>(responseContent, JsonSerializerSettings));
 					}
 				}
 			}
@@ -491,7 +505,7 @@ namespace WordpressSharp {
 			}
 		}
 
-		protected virtual void SetResponseContainerValues<T>(ref Stopwatch watch, ref Response<T> responseContainer, HttpResponseMessage response) {
+		private static void SetResponseContainerValues<T>(ref Stopwatch watch, ref Response<T> responseContainer, HttpResponseMessage response) {
 			if (watch == null || responseContainer == null) {
 				return;
 			}

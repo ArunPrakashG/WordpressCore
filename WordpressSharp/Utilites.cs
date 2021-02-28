@@ -23,7 +23,7 @@ namespace WordpressSharp {
 			return Convert.ToBase64String(Encoding.UTF8.GetBytes(plainText));
 		}
 
-		internal static HttpRequestMessage TryAddHeaders(this HttpRequestMessage request, Dictionary<string, string> headers) {
+		internal static HttpRequestMessage TryAddHeaders(this HttpRequestMessage request, IDictionary<string, string> headers) {
 			if (headers == null || headers.Count <= 0) {
 				return request;
 			}

@@ -6,10 +6,11 @@ using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Threading;
+using WordpressSharp.Interfaces;
 using static WordpressSharp.Models.Requests.Enums;
 
 namespace WordpressSharp.Models.Requests {
-	public class RequestBuilder {
+	public class RequestBuilder : IRequestBuilder<RequestBuilder, Request> {
 		private Uri BaseUri;
 		private Uri RequestUri;
 		private CancellationToken Token;
@@ -39,8 +40,8 @@ namespace WordpressSharp.Models.Requests {
 		private WordpressAuthorization Authorization;
 		private Func<string, bool> ResponseValidationDelegate;
 		private HttpMethod Method;
-		private Dictionary<string, string> Headers;
-		private Dictionary<string, string> FormBody;
+		private IDictionary<string, string> Headers;
+		private HttpContent FormBody;
 
 		public RequestBuilder(string requestUrlBase, string endpoint) {
 			if (string.IsNullOrEmpty(requestUrlBase) || string.IsNullOrEmpty(endpoint)) {
@@ -79,96 +80,99 @@ namespace WordpressSharp.Models.Requests {
 
 		private bool CreateUri() {
 			string baseUrl = BaseUri.OriginalString;
-			char joiningChar = ContainsQueryValues(baseUrl, out bool hasMultiple) && hasMultiple ? '&' : '?';
 
-			// because context value is ignored mostly on those pages which doesn't require it.
-			if (!string.IsNullOrEmpty(Context)) {
-				baseUrl += $"{joiningChar}context={Context}";
+			if(FormBody == null || FormBody.Headers.Any()) {
+				char joiningChar = ContainsQueryValues(baseUrl, out bool hasMultiple) && hasMultiple ? '&' : '?';
+
+				// because context value is ignored mostly on those pages which doesn't require it.
+				if (!string.IsNullOrEmpty(Context)) {
+					baseUrl += $"{joiningChar}context={Context}";
+				}
+
+				if (PageNumber >= 1) {
+					baseUrl += $"{joiningChar}page={PageNumber}";
+				}
+
+				if (PerPageCount >= 1) {
+					baseUrl += $"{joiningChar}per_page={(PerPageCount <= 0 ? 10 : PerPageCount)}";
+				}
+
+				if (!string.IsNullOrEmpty(SearchQuery)) {
+					baseUrl += $"{joiningChar}search={SearchQuery}";
+				}
+
+				if (Embeded) {
+					baseUrl += $"{joiningChar}_embed=1";
+				}
+
+				if (After != DateTime.MinValue) {
+					baseUrl += $"{joiningChar}after={After.ToString("o", CultureInfo.InvariantCulture)}";
+				}
+
+				if (Before != DateTime.MinValue) {
+					baseUrl += $"{joiningChar}before={Before.ToString("o", CultureInfo.InvariantCulture)}";
+				}
+
+				if (AllowedAuthors != null && AllowedAuthors.Count > 0) {
+					baseUrl += $"{joiningChar}author={string.Join(",", AllowedAuthors)}";
+				}
+
+				if (ExcludedAuthors != null && ExcludedAuthors.Count > 0) {
+					baseUrl += $"{joiningChar}author_exclude={string.Join(",", ExcludedAuthors)}";
+				}
+
+				if (AllowedIds != null && AllowedIds.Count > 0) {
+					baseUrl += $"{joiningChar}include={string.Join(",", AllowedIds)}";
+				}
+
+				if (ExcludedIds != null && ExcludedIds.Count > 0) {
+					baseUrl += $"{joiningChar}exclude={string.Join(",", ExcludedIds)}";
+				}
+
+				if (ResultOffset > 0) {
+					baseUrl += $"{joiningChar}offset={ResultOffset}";
+				}
+
+				if (!string.IsNullOrEmpty(SortOrder)) {
+					baseUrl += $"{joiningChar}order={SortOrder}";
+				}
+
+				if (!string.IsNullOrEmpty(ResultOrder)) {
+					baseUrl += $"{joiningChar}orderby={ResultOrder}";
+				}
+
+				if (LimitBySlug != null && LimitBySlug.Count > 0) {
+					baseUrl += $"{joiningChar}slug={string.Join(",", LimitBySlug)}";
+				}
+
+				if (!string.IsNullOrEmpty(LimitByStatus)) {
+					baseUrl += $"{joiningChar}status={LimitByStatus}";
+				}
+
+				if (!string.IsNullOrEmpty(LimitByTaxonomyRelation)) {
+					baseUrl += $"{joiningChar}tax_relation={LimitByTaxonomyRelation}";
+				}
+
+				if (AllowedCategories != null && AllowedCategories.Count > 0) {
+					baseUrl += $"{joiningChar}categories={string.Join(",", AllowedCategories)}";
+				}
+
+				if (ExcludedCategories != null && ExcludedCategories.Count > 0) {
+					baseUrl += $"{joiningChar}categories_exclude={string.Join(",", ExcludedCategories)}";
+				}
+
+				if (AllowedTags != null && AllowedTags.Count > 0) {
+					baseUrl += $"{joiningChar}tags={string.Join(",", AllowedTags)}";
+				}
+
+				if (ExcludedTags != null && ExcludedTags.Count > 0) {
+					baseUrl += $"{joiningChar}tags_exclude={string.Join(",", ExcludedTags)}";
+				}
+
+				if (OnlySticky) {
+					baseUrl += $"{joiningChar}sticky=1";
+				}
 			}			
-
-			if (PageNumber >= 1) {
-				baseUrl += $"{joiningChar}page={PageNumber}";
-			}
-
-			if(PerPageCount >= 1) {
-				baseUrl += $"{joiningChar}per_page={(PerPageCount <= 0 ? 10 : PerPageCount)}";
-			}			
-
-			if (!string.IsNullOrEmpty(SearchQuery)) {
-				baseUrl += $"{joiningChar}search={SearchQuery}";
-			}
-
-			if (Embeded) {
-				baseUrl += $"{joiningChar}_embed=1";
-			}
-
-			if (After != DateTime.MinValue) {
-				baseUrl += $"{joiningChar}after={After.ToString("o", CultureInfo.InvariantCulture)}";
-			}
-
-			if (Before != DateTime.MinValue) {
-				baseUrl += $"{joiningChar}before={Before.ToString("o", CultureInfo.InvariantCulture)}";
-			}
-
-			if (AllowedAuthors != null && AllowedAuthors.Count > 0) {
-				baseUrl += $"{joiningChar}author={string.Join(",", AllowedAuthors)}";
-			}
-
-			if (ExcludedAuthors != null && ExcludedAuthors.Count > 0) {
-				baseUrl += $"{joiningChar}author_exclude={string.Join(",", ExcludedAuthors)}";
-			}
-
-			if (AllowedIds != null && AllowedIds.Count > 0) {
-				baseUrl += $"{joiningChar}include={string.Join(",", AllowedIds)}";
-			}
-
-			if (ExcludedIds != null && ExcludedIds.Count > 0) {
-				baseUrl += $"{joiningChar}exclude={string.Join(",", ExcludedIds)}";
-			}
-
-			if (ResultOffset > 0) {
-				baseUrl += $"{joiningChar}offset={ResultOffset}";
-			}
-
-			if (!string.IsNullOrEmpty(SortOrder)) {
-				baseUrl += $"{joiningChar}order={SortOrder}";
-			}			
-
-			if (!string.IsNullOrEmpty(ResultOrder)) {
-				baseUrl += $"{joiningChar}orderby={ResultOrder}";
-			}			
-
-			if (LimitBySlug != null && LimitBySlug.Count > 0) {
-				baseUrl += $"{joiningChar}slug={string.Join(",", LimitBySlug)}";
-			}
-
-			if (!string.IsNullOrEmpty(LimitByStatus)) {
-				baseUrl += $"{joiningChar}status={LimitByStatus}";
-			}
-
-			if (!string.IsNullOrEmpty(LimitByTaxonomyRelation)) {
-				baseUrl += $"{joiningChar}tax_relation={LimitByTaxonomyRelation}";
-			}
-
-			if (AllowedCategories != null && AllowedCategories.Count > 0) {
-				baseUrl += $"{joiningChar}categories={string.Join(",", AllowedCategories)}";
-			}
-
-			if (ExcludedCategories != null && ExcludedCategories.Count > 0) {
-				baseUrl += $"{joiningChar}categories_exclude={string.Join(",", ExcludedCategories)}";
-			}
-
-			if (AllowedTags != null && AllowedTags.Count > 0) {
-				baseUrl += $"{joiningChar}tags={string.Join(",", AllowedTags)}";
-			}
-
-			if (ExcludedTags != null && ExcludedTags.Count > 0) {
-				baseUrl += $"{joiningChar}tags_exclude={string.Join(",", ExcludedTags)}";
-			}
-
-			if (OnlySticky) {
-				baseUrl += $"{joiningChar}sticky=1";
-			}
 
 			if (!Uri.TryCreate(baseUrl, UriKind.RelativeOrAbsolute, out Uri requestUri)) {
 				return false;
@@ -196,6 +200,8 @@ namespace WordpressSharp.Models.Requests {
 			BaseUri = requestUri ?? throw new ArgumentNullException(nameof(requestUri));
 			return this;
 		}
+
+		public RequestBuilder InitializeWithDefaultValues() => this;
 
 		public Request CreateWithCallback(Callback callback) {
 			if (CreateUri()) {
@@ -228,17 +234,24 @@ namespace WordpressSharp.Models.Requests {
 			return this;
 		}
 
-		public RequestBuilder WithPostBody(Func<PostObjectBuilder, PostObjectBuilder> formBodyBuilder) {
-			FormBody = formBodyBuilder.Invoke(new PostObjectBuilder()).Create();
+		public RequestBuilder WithPostBody(Func<PostBuilder, HttpContent> builder) {
+			FormBody = builder.Invoke(new PostBuilder());
 			return this;
 		}
 
-		public RequestBuilder WithMediaBody(Func<MediaObjectBuilder, MediaObjectBuilder> formBodyBuilder) {
-			FormBody = formBodyBuilder.Invoke(new MediaObjectBuilder()).Create();
+		public RequestBuilder WithMediaBody(Func<MediaBuilder, HttpContent> builder) {
+			FormBody = builder.Invoke(new MediaBuilder());
 			return this;
 		}
 
-		public RequestBuilder WithHeaders(Dictionary<string, string> headers) {
+		public RequestBuilder WithBody<TBuilderType, YBuilderReturnType>(Func<TBuilderType, YBuilderReturnType> builder)
+			where TBuilderType: IRequestBuilder<TBuilderType, YBuilderReturnType>, new()
+			where YBuilderReturnType: HttpContent {
+			FormBody = builder.Invoke(new TBuilderType());
+			return this;
+		}
+
+		public RequestBuilder WithHeaders(IDictionary<string, string> headers) {
 			Headers = headers;
 			return this;
 		}

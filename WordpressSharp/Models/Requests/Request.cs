@@ -19,8 +19,8 @@ namespace WordpressSharp.Models.Requests {
 		internal readonly Func<string, bool> ValidationDelegate;
 		internal readonly HttpMethod RequestMethod;
 		internal readonly int PerPageCount;
-		internal readonly Dictionary<string, string> Headers;
-		internal readonly Dictionary<string, string> FormBody;
+		internal readonly IDictionary<string, string> Headers;
+		internal readonly HttpContent FormBody;
 
 		/// <summary>
 		/// Gets if there are any headers specified with the request.
@@ -30,7 +30,7 @@ namespace WordpressSharp.Models.Requests {
 		/// <summary>
 		/// Gets if the request has form body content.
 		/// </summary>
-		public bool HasFormContent => FormBody != null && FormBody.Count > 0;
+		public bool HasFormContent => FormBody != null;
 
 		/// <summary>
 		/// Gets if the request should be authorized using the specified authorization method.
@@ -57,7 +57,7 @@ namespace WordpressSharp.Models.Requests {
 		/// </summary>
 		public bool IsRequestExecutable => RequestUri != null;
 
-		internal Request(Uri requestUri, Func<string, bool> validationDelegate, string endpoint, CancellationToken token, WordpressAuthorization auth, HttpMethod method, Dictionary<string, string> headers, Dictionary<string, string> formBody, int perPageCount = 10, Callback callback = null) {
+		internal Request(Uri requestUri, Func<string, bool> validationDelegate, string endpoint, CancellationToken token, WordpressAuthorization auth, HttpMethod method, IDictionary<string, string> headers, HttpContent formBody, int perPageCount = 10, Callback callback = null) {
 			RequestUri = requestUri;
 			Callback = callback;
 			Endpoint = endpoint;

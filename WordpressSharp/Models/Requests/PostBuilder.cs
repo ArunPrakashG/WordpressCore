@@ -4,32 +4,41 @@ using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
+using WordpressSharp.Interfaces;
 using static WordpressSharp.Models.Requests.Enums;
 
 namespace WordpressSharp.Models.Requests {
 	/// <summary>
 	/// Builder used to build CreatePost request
 	/// </summary>
-	public class PostObjectBuilder {
+	public class PostBuilder : QueryBuilder<PostBuilder>, IRequestBuilder<PostBuilder, HttpContent> {
 		private string Content;
 		private string Title;
 		private DateTime PostDate;
 		private string Slug;
-		private PostStatus Status = PostStatus.Pending;
+		private PostStatus Status;
 		private string Password;
 		private int AuthorId;
 		private string Excerpt;
 		private int FeaturedImageId;
-		private CommandStatusValue CommandStatus = CommandStatusValue.Open;
-		private PingStatusValue PingStatus = PingStatusValue.Open;
-		private PostFormat Format = PostFormat.Standard;
+		private CommandStatusValue CommandStatus;
+		private PingStatusValue PingStatus;
+		private PostFormat Format;
 		private bool Sticky;
 		private int[] Categories;
 		private int[] Tags;
 
-		internal PostObjectBuilder() { }
+		public PostBuilder() { }
 
-		internal Dictionary<string, string> Create() {
+		public PostBuilder InitializeWithDefaultValues() {
+			CommandStatus = CommandStatusValue.Open;
+			PingStatus = PingStatusValue.Open;
+			Format = PostFormat.Standard;
+			Status = PostStatus.Pending;
+			return this;
+		}
+
+		public HttpContent Create() {
 			Dictionary<string, string>  formData = new Dictionary<string, string>();
 
 			if (!string.IsNullOrEmpty(Content)) {
@@ -80,7 +89,7 @@ namespace WordpressSharp.Models.Requests {
 			formData.Add("ping_status", PingStatus.ToString().ToLower());
 			formData.Add("format", Format.ToString().ToLower());
 			formData.Add("status", Status.ToString().ToLower());
-			return formData;
+			return new FormUrlEncodedContent(formData);
 		}
 
 		/// <summary>
@@ -88,7 +97,7 @@ namespace WordpressSharp.Models.Requests {
 		/// </summary>
 		/// <param name="title"></param>
 		/// <returns></returns>
-		public PostObjectBuilder WithTitle(string title) {
+		public PostBuilder WithTitle(string title) {
 			Title = title;
 			return this;
 		}
@@ -98,7 +107,7 @@ namespace WordpressSharp.Models.Requests {
 		/// </summary>
 		/// <param name="content"></param>
 		/// <returns></returns>
-		public PostObjectBuilder WithContent(string content) {
+		public PostBuilder WithContent(string content) {
 			Content = content;
 			return this;
 		}
@@ -109,7 +118,7 @@ namespace WordpressSharp.Models.Requests {
 		/// </summary>
 		/// <param name="dateTime"></param>
 		/// <returns></returns>
-		public PostObjectBuilder WithDate(DateTime dateTime) {
+		public PostBuilder WithDate(DateTime dateTime) {
 			PostDate = dateTime;
 			return this;
 		}
@@ -119,7 +128,7 @@ namespace WordpressSharp.Models.Requests {
 		/// </summary>
 		/// <param name="slug"></param>
 		/// <returns></returns>
-		public PostObjectBuilder WithSlug(string slug) {
+		public PostBuilder WithSlug(string slug) {
 			Slug = slug;
 			return this;
 		}
@@ -129,7 +138,7 @@ namespace WordpressSharp.Models.Requests {
 		/// </summary>
 		/// <param name="status"></param>
 		/// <returns></returns>
-		public PostObjectBuilder WithStatus(PostStatus status) {
+		public PostBuilder WithStatus(PostStatus status) {
 			Status = status;
 			return this;
 		}
@@ -140,7 +149,7 @@ namespace WordpressSharp.Models.Requests {
 		/// </summary>
 		/// <param name="password"></param>
 		/// <returns></returns>
-		public PostObjectBuilder WithPassword(string password) {
+		public PostBuilder WithPassword(string password) {
 			Password = password;
 			return this;
 		}
@@ -150,7 +159,7 @@ namespace WordpressSharp.Models.Requests {
 		/// </summary>
 		/// <param name="authorId"></param>
 		/// <returns></returns>
-		public PostObjectBuilder WithAuthor(int authorId) {
+		public PostBuilder WithAuthor(int authorId) {
 			AuthorId = authorId;
 			return this;
 		}
@@ -160,7 +169,7 @@ namespace WordpressSharp.Models.Requests {
 		/// </summary>
 		/// <param name="excerpt"></param>
 		/// <returns></returns>
-		public PostObjectBuilder WithExcerpt(string excerpt) {
+		public PostBuilder WithExcerpt(string excerpt) {
 			Excerpt = excerpt;
 			return this;
 		}
@@ -170,7 +179,7 @@ namespace WordpressSharp.Models.Requests {
 		/// </summary>
 		/// <param name="featuredImageId"></param>
 		/// <returns></returns>
-		public PostObjectBuilder WithFeaturedImage(int featuredImageId) {
+		public PostBuilder WithFeaturedImage(int featuredImageId) {
 			FeaturedImageId = featuredImageId;
 			return this;
 		}
@@ -181,7 +190,7 @@ namespace WordpressSharp.Models.Requests {
 		/// <param name="client"></param>
 		/// <param name="imagePath"></param>
 		/// <returns></returns>
-		public async Task<PostObjectBuilder> WithFeaturedImage(WordpressClient client, string imagePath) {
+		public async Task<PostBuilder> WithFeaturedImage(WordpressClient client, string imagePath) {
 			if (client == null) {
 				throw new ArgumentNullException(nameof(client));
 			}
@@ -191,7 +200,7 @@ namespace WordpressSharp.Models.Requests {
 			}
 
 			if (!File.Exists(imagePath)) {
-				throw new FileNotFoundException($"{imagePath} not found");
+				throw new FileNotFoundException(nameof(imagePath));
 			}
 
 			using (StreamContent content = new(File.OpenRead(imagePath))) {
@@ -200,37 +209,37 @@ namespace WordpressSharp.Models.Requests {
 
 				content.Headers.TryAddWithoutValidation("Content-Type", Utilites.GetMIMETypeFromExtension(extension));
 				content.Headers.TryAddWithoutValidation("Content-Disposition", $"attachment; filename={fileName}");
-				await client.CreateMediaAsync()
+				await client.CreateMediaAsync((builder) => builder.Med
 				return (await _httpHelper.PostRequest<MediaItem>($"{_defaultPath}{_methodPath}", content).ConfigureAwait(false)).Item1;
 			}
 		}
 
-		public PostObjectBuilder WithCommandStatus(CommandStatusValue commandStatus) {
+		public PostBuilder WithCommandStatus(CommandStatusValue commandStatus) {
 			CommandStatus = commandStatus;
 			return this;
 		}
 
-		public PostObjectBuilder WithPingStatus(PingStatusValue pingStatus) {
+		public PostBuilder WithPingStatus(PingStatusValue pingStatus) {
 			PingStatus = pingStatus;
 			return this;
 		}
 
-		public PostObjectBuilder WithFormat(PostFormat format) {
+		public PostBuilder WithFormat(PostFormat format) {
 			Format = format;
 			return this;
 		}
 
-		public PostObjectBuilder WithStickyBehaviour(bool value) {
+		public PostBuilder WithStickyBehaviour(bool value) {
 			Sticky = value;
 			return this;
 		}
 
-		public PostObjectBuilder WithCategories(params int[] categories) {
+		public PostBuilder WithCategories(params int[] categories) {
 			Categories = categories;
 			return this;
 		}
 
-		public PostObjectBuilder WithTags(params int[] tags) {
+		public PostBuilder WithTags(params int[] tags) {
 			Tags = tags;
 			return this;
 		}

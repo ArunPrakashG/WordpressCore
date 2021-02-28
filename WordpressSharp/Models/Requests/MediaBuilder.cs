@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net.Http;
 using WordpressSharp.Interfaces;
 using static WordpressSharp.Models.Requests.Enums;
@@ -27,8 +28,25 @@ namespace WordpressSharp.Models.Requests {
 			return this;
 		}
 
-		public MediaBuilder WithFile(Stream fileStream) {
-			HttpStreamContent = new StreamContent(fileStream ?? throw new ArgumentNullException(nameof(fileStream));
+		public MediaBuilder WithFile(Stream fileStream, string filePath) {
+			if(fileStream == null) {
+				throw new ArgumentNullException(nameof(fileStream));
+			}
+
+			if (string.IsNullOrEmpty(filePath)) {
+				throw new ArgumentNullException(filePath);
+			}
+
+			if (!File.Exists(filePath)) {
+				throw new FileNotFoundException(filePath);
+			}
+
+			HttpStreamContent = new StreamContent(fileStream);
+
+			string fileName = Path.GetFileName(filePath);
+			string extension = fileName.Split('.').Last();
+			HttpStreamContent.Headers.TryAddWithoutValidation("Content-Type", Utilites.GetMIMETypeFromExtension(extension));
+			HttpStreamContent.Headers.TryAddWithoutValidation("Content-Disposition", $"attachment; filename={fileName}");
 			return this;
 		}
 
@@ -42,6 +60,10 @@ namespace WordpressSharp.Models.Requests {
 			}
 
 			HttpStreamContent = new StreamContent(File.OpenRead(filePath));
+			string fileName = Path.GetFileName(filePath);
+			string extension = fileName.Split('.').Last();
+			HttpStreamContent.Headers.TryAddWithoutValidation("Content-Type", Utilites.GetMIMETypeFromExtension(extension));
+			HttpStreamContent.Headers.TryAddWithoutValidation("Content-Disposition", $"attachment; filename={fileName}");
 			return this;
 		}
 

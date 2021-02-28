@@ -6,7 +6,7 @@ using System.Text;
 namespace WordpressSharp.Models.Responses {
 	public class Media : BaseResponse {
 		[JsonProperty("id")]
-		public int Identifier { get; set; }
+		public int Id { get; set; }
 
 		[JsonProperty("date")]
 		public DateTime UploadedDate { get; set; }
@@ -69,7 +69,7 @@ namespace WordpressSharp.Models.Responses {
 		public MediaDetailsContainer MediaDetails { get; set; }
 
 		[JsonProperty("post")]
-		public int PostId { get; set; }
+		public int AssociatedPostId { get; set; }
 
 		[JsonProperty("source_url")]
 		public string SourceUrl { get; set; }

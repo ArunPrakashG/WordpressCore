@@ -203,15 +203,9 @@ namespace WordpressSharp.Models.Requests {
 				throw new FileNotFoundException(nameof(imagePath));
 			}
 
-			using (StreamContent content = new(File.OpenRead(imagePath))) {
-				string fileName = Path.GetFileName(imagePath);
-				string extension = fileName.Split('.').Last();
-
-				content.Headers.TryAddWithoutValidation("Content-Type", Utilites.GetMIMETypeFromExtension(extension));
-				content.Headers.TryAddWithoutValidation("Content-Disposition", $"attachment; filename={fileName}");
-				await client.CreateMediaAsync((builder) => builder.Med
-				return (await _httpHelper.PostRequest<MediaItem>($"{_defaultPath}{_methodPath}", content).ConfigureAwait(false)).Item1;
-			}
+			var featuredMedia = await client.CreateMediaAsync((builder) => builder.WithBody<MediaBuilder, HttpContent>((media) => media.WithFile(imagePath).Create()).Create());
+			FeaturedImageId = featuredMedia.Status ? featuredMedia.Value.Id : 0;
+			return this;
 		}
 
 		public PostBuilder WithCommandStatus(CommandStatusValue commandStatus) {

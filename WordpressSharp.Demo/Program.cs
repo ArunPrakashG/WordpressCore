@@ -2,8 +2,10 @@ using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Net;
+using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
+using WordpressSharp.Models.Requests;
 using WordpressSharp.Models.Responses;
 using static WordpressSharp.Models.Requests.Enums;
 
@@ -41,60 +43,30 @@ namespace WordpressSharp.Demo {
 			.WithDefaultRequestHeaders(new KeyValuePair<string, string>("X-Client", "Mobile"), // allows to add custom headers for requests send from this instance
 									   new KeyValuePair<string, string>("X-Version", "1.0"));
 
-			// create a Posts request
-			Response<IEnumerable<Post>> posts = await client.GetPostsAsync((request) => request.OrderResultBy(Order.Ascending)
-				// only get posts with published status
-				.SetAllowedStatus(Status.Published)
+			Response<Post> post = await client.CreatePostAsync((builder) => builder
+			.WithBody<PostBuilder, HttpContent>((post) => post
+				.WithCategories(10, 31, 44)
+				.WithCommandStatus(CommandStatusValue.Open)
+				.WithContent("This is post content!")
+				.WithExcerpt("This is an Excerpt!")
+				.WithFormat(PostFormat.Standard)
+				.WithPassword("super_secure_encrypted_password")
+				.WithPingStatus(PingStatusValue.Open)
+				.WithSlug("post-slug")
+				.WithStatus(PostStatus.Publish)
+				.WithTags(0, 23, 42)
+				.WithFeaturedImage(7831)
+				.WithTitle("This is a post title!")
+				.Create())
+			.Create());
 
-				// specifys the response should contain embed field
-				.SetEmbeded(true)
-
-				// set scope of the request, default is view, set scope as edit for edit requests
-				.SetScope(Scope.View)
-
-				// set allowed categories of post. only posts in these categories will be in response. should be category id.
-				.AllowCategories(51, 32)
-
-				// set allowed authors of post. only posts by these authors will be in response. should be author id.
-				.AllowAuthors(47, 32, 13, 53)
-
-				// adds a cancellation token to the request, allowing to cancel the request anytime as needed
-				.WithCancellationToken(cancellationTokenSource.Token)
-
-				// sets the maximum number of posts in a single page
-				.WithPerPage(20)
-
-				// gets the first page of posts containg 20 posts, specifying 2 here will get next page. used for pagenation	
-				.WithPageNumber(1)
-
-				// adds request specific authorization. can be BasicAuth or Jwt Authentication methods. Use plugin for Jwt
-				.WithAuthorization(new WordpressAuthorization("username", "password", type: WordpressClient.AuthorizationType.Jwt))
-
-				// specifiys a response validator/processor for current request
-				.WithResponseValidationOverride((response) => {
-					if (string.IsNullOrEmpty(response)) {
-						return false;
-					}
-
-					// returning true completes the request by returning deserialized response
-					// returning false terminates the request with an error message
-					return true;
-				})
-
-				// Should be called at the end of the builder to build the request as a Request object
-				// pass a Callback container to get events on internal activity for this request
-				.CreateWithCallback(new Callback(OnException, OnResponseReceived, OnRequestStatus))).ConfigureAwait(false);
-
-			if (!posts.Status) {
+			if (!post.Status) {
 				// Request failed
-				Console.WriteLine(posts.Message);
+				Console.WriteLine(post.Message);
 				return -1;
 			}
 
-			foreach (Post post in posts.Value) {
-				// do yer magic!
-			}
-
+			Console.WriteLine("Post created: " + post.Value.Id);
 			Console.ReadKey();
 			return 0;
 		}

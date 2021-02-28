@@ -153,7 +153,7 @@ namespace WordpressSharp.Models.Requests {
 		}
 
 		/// <summary>
-		/// Generates an random password of specified length and returns it using out parameter.
+		/// Generates a random password of specified length and returns it using out parameter.
 		/// </summary>
 		/// <param name="generatedPassword">The generated password</param>
 		/// <param name="passwordLength">The password length. Default is 13</param>

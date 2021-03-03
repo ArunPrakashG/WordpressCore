@@ -20,23 +20,34 @@ namespace WordpressSharp.Models.Requests {
 		private int AuthorId;
 		private string Excerpt;
 		private int FeaturedImageId;
-		private CommandStatusValue CommandStatus;
+		private CommentStatusValue CommandStatus;
 		private PingStatusValue PingStatus;
 		private PostFormat Format;
 		private bool Sticky;
 		private int[] Categories;
 		private int[] Tags;
 
+		/// <summary>
+		/// Constructor
+		/// </summary>
 		public PostBuilder() { }
 
+		/// <summary>
+		/// Initialize the Builder with default values.
+		/// </summary>
+		/// <returns></returns>
 		public PostBuilder InitializeWithDefaultValues() {
-			CommandStatus = CommandStatusValue.Open;
+			CommandStatus = CommentStatusValue.Open;
 			PingStatus = PingStatusValue.Open;
 			Format = PostFormat.Standard;
 			Status = PostStatus.Pending;
 			return this;
 		}
 
+		/// <summary>
+		/// Creates <see cref="HttpContent"/> which is to be send with the request.
+		/// </summary>
+		/// <returns></returns>
 		public HttpContent Create() {
 			Dictionary<string, string> formData = new Dictionary<string, string>();
 
@@ -111,12 +122,12 @@ namespace WordpressSharp.Models.Requests {
 			return this;
 		}
 
-		[Obsolete]
 		/// <summary>
-		/// Sets the published date of the post (Bugged)
+		/// Sets the published date of the post
 		/// </summary>
 		/// <param name="dateTime"></param>
 		/// <returns></returns>
+		[Obsolete("I feel like date is something which is set in the server side. initially i thought we could pass a date from client side so that the published date will be as of this date.")]		
 		public PostBuilder WithDate(DateTime dateTime) {
 			PostDate = dateTime;
 			return this;
@@ -218,31 +229,61 @@ namespace WordpressSharp.Models.Requests {
 			return this;
 		}
 
-		public PostBuilder WithCommandStatus(CommandStatusValue commandStatus) {
+		/// <summary>
+		/// Sets the comment status on the post
+		/// </summary>
+		/// <param name="commandStatus"></param>
+		/// <returns></returns>
+		public PostBuilder WithCommentStatus(CommentStatusValue commandStatus) {
 			CommandStatus = commandStatus;
 			return this;
 		}
 
+		/// <summary>
+		/// Sets the ping status on the post
+		/// </summary>
+		/// <param name="pingStatus"></param>
+		/// <returns></returns>
 		public PostBuilder WithPingStatus(PingStatusValue pingStatus) {
 			PingStatus = pingStatus;
 			return this;
 		}
 
+		/// <summary>
+		/// Sets the post format
+		/// </summary>
+		/// <param name="format"></param>
+		/// <returns></returns>
 		public PostBuilder WithFormat(PostFormat format) {
 			Format = format;
 			return this;
 		}
 
+		/// <summary>
+		/// Sets if the post is sticky or not
+		/// </summary>
+		/// <param name="value"></param>
+		/// <returns></returns>
 		public PostBuilder WithStickyBehaviour(bool value) {
 			Sticky = value;
 			return this;
 		}
 
+		/// <summary>
+		/// Sets associated categories for this post
+		/// </summary>
+		/// <param name="categories"></param>
+		/// <returns></returns>
 		public PostBuilder WithCategories(params int[] categories) {
 			Categories = categories;
 			return this;
 		}
 
+		/// <summary>
+		/// Sets associated tags for this post
+		/// </summary>
+		/// <param name="tags"></param>
+		/// <returns></returns>
 		public PostBuilder WithTags(params int[] tags) {
 			Tags = tags;
 			return this;

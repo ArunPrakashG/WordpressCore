@@ -46,7 +46,7 @@ namespace WordpressSharp.Demo {
 			Response<Post> post = await client.CreatePostAsync((builder) => builder
 			.WithBody<PostBuilder, HttpContent>((post) => post
 				.WithCategories(10, 31, 44)
-				.WithCommandStatus(CommandStatusValue.Open)
+				.WithCommentStatus(CommentStatusValue.Open)
 				.WithContent("This is post content!")
 				.WithExcerpt("This is an Excerpt!")
 				.WithFormat(PostFormat.Standard)

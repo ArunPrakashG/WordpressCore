@@ -15,14 +15,14 @@ namespace WordpressSharp.Models.Requests {
 		private int AssociatedPostId = -1;
 		private string Title;
 		private int AuthorId = -1;
-		private CommandStatusValue CommandStatus;
+		private CommentStatusValue CommandStatus;
 		private PingStatusValue PingStatus;
 
 		public MediaBuilder() { }
 
 		public MediaBuilder InitializeWithDefaultValues() {
 			AssociatedPostId = -1;
-			CommandStatus = CommandStatusValue.Open;
+			CommandStatus = CommentStatusValue.Open;
 			PingStatus = PingStatusValue.Open;
 			AuthorId = -1;			
 			return this;
@@ -131,7 +131,7 @@ namespace WordpressSharp.Models.Requests {
 			return this;
 		}
 
-		public MediaBuilder WithCommandStatus(CommandStatusValue commandStatus) {
+		public MediaBuilder WithCommandStatus(CommentStatusValue commandStatus) {
 			CommandStatus = commandStatus;
 			return this;
 		}

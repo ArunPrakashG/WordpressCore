@@ -12,7 +12,7 @@ namespace WordpressSharp.Models.Requests {
 			Private
 		}
 
-		public enum CommandStatusValue {
+		public enum CommentStatusValue {
 			Open,
 			Closed
 		}

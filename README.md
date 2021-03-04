@@ -1,6 +1,8 @@
 # WordpressSharp
 Library to interact with Wordpress REST API in a fluent pattern.
 
+Available on [Nuget](https://www.nuget.org/packages/WordpressCore/)
+
 ## Supported Platforms
 * .net standard 2.1
 * .net 5

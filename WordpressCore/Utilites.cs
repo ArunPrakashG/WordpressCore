@@ -1,4 +1,5 @@
 using Ganss.XSS;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Net.Http;
@@ -10,6 +11,21 @@ using System.Threading.Tasks;
 
 namespace WordpressCore {
 	internal static class Utilites {
+
+		/// <summary>
+		/// Custom JSON converter to convert string values to boolean in capabilities and extra_capabilities properties
+		/// <para>(Taken from WordpressPCL. Thanks. [https://github.com/wp-net/WordPressPCL/blob/master/WordPressPCL/Utility/CustomCapabilitiesJsonConverter.cs])</para>
+		/// <see cref="Models.Responses.User.Capabilities"/>
+		/// <see cref="Models.Responses.User.ExtraCapabilities"/>
+		/// </summary>
+		public class CustomCapabilitiesJsonConverter : JsonConverter<bool> {
+			/// <inheritdoc />
+			public override bool ReadJson(JsonReader reader, Type objectType, bool existingValue, bool hasExistingValue, JsonSerializer serializer) => Convert.ToBoolean(reader.ValueType == typeof(string) ? Convert.ToByte(reader.Value) : reader.Value);
+
+			/// <inheritdoc />
+			public override void WriteJson(JsonWriter writer, bool value, JsonSerializer serializer) => writer.WriteValue(value);
+		}
+
 		internal static string CleanContent(this string input) {
 			var sanitizer = new HtmlSanitizer();
 			sanitizer.KeepChildNodes = false;

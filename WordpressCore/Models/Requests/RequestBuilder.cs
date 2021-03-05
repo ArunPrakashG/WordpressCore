@@ -61,7 +61,6 @@ namespace WordpressCore.Models.Requests {
 
 		public RequestBuilder() { }
 
-
 		public static RequestBuilder WithBuilder() => new RequestBuilder();
 
 		private static bool ContainsQueryValues(string url, out bool hasMultiple) {
@@ -255,6 +254,11 @@ namespace WordpressCore.Models.Requests {
 
 		public RequestBuilder WithCommentBody(Func<CommentBuilder, HttpContent> builder) {
 			FormBody = builder.Invoke(new CommentBuilder().InitializeWithDefaultValues());
+			return this;
+		}
+
+		public RequestBuilder WithUserBody(Func<UserBuilder, HttpContent> builder) {
+			FormBody = builder.Invoke(new UserBuilder().InitializeWithDefaultValues());
 			return this;
 		}
 

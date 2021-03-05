@@ -1,4 +1,6 @@
 using Newtonsoft.Json;
+using System.Collections.Generic;
+using static WordpressCore.Utilites;
 
 namespace WordpressCore.Models.Responses {
 	public class User : BaseResponse {
@@ -22,5 +24,11 @@ namespace WordpressCore.Models.Responses {
 
 		[JsonProperty("avatar_urls")]
 		public AvatarUrls AvatarContainer { get; set; }
+
+		[JsonProperty("capabilities", ItemConverterType = typeof(CustomCapabilitiesJsonConverter))]
+		public IDictionary<string, bool> Capabilities { get; set; }
+
+		[JsonProperty("extra_capabilities", ItemConverterType = typeof(CustomCapabilitiesJsonConverter))]
+		public IDictionary<string, bool> ExtraCapabilities { get; set; }
 	}
 }

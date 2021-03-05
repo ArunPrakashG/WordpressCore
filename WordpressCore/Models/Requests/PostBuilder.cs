@@ -134,11 +134,15 @@ namespace WordpressCore.Models.Requests {
 		}
 
 		/// <summary>
-		/// Sets the slug of the post
+		/// Sets the slug of the post. Should only contain Alphanumeric charecters.
 		/// </summary>
 		/// <param name="slug"></param>
 		/// <returns></returns>
 		public PostBuilder WithSlug(string slug) {
+			if (!Utilites.IsAlphanumeric(slug)) {
+				throw new ArgumentException($"{nameof(slug)} can only contain alphanumeric charecters. (a-Z, 0-9)");
+			}
+
 			Slug = slug;
 			return this;
 		}

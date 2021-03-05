@@ -10,6 +10,9 @@ using WordpressCore.Interfaces;
 using static WordpressCore.Models.Requests.Enums;
 
 namespace WordpressCore.Models.Requests {
+	/// <summary>
+	/// Allows you to construct a request in a fluent pattern.
+	/// </summary>
 	public class RequestBuilder : IRequestBuilder<RequestBuilder, Request> {
 		private Uri BaseUri;
 		private Uri RequestUri;
@@ -58,6 +61,7 @@ namespace WordpressCore.Models.Requests {
 
 		public RequestBuilder() { }
 
+
 		public static RequestBuilder WithBuilder() => new RequestBuilder();
 
 		private static bool ContainsQueryValues(string url, out bool hasMultiple) {
@@ -81,7 +85,7 @@ namespace WordpressCore.Models.Requests {
 		private bool CreateUri() {
 			string baseUrl = BaseUri.OriginalString;
 
-			if(FormBody == null || FormBody.Headers.Any()) {
+			if (FormBody == null || FormBody.Headers.Any()) {
 				char joiningChar = ContainsQueryValues(baseUrl, out bool hasMultiple) && hasMultiple ? '&' : '?';
 
 				// because context value is ignored mostly on those pages which doesn't require it.
@@ -172,7 +176,7 @@ namespace WordpressCore.Models.Requests {
 				if (OnlySticky) {
 					baseUrl += $"{joiningChar}sticky=1";
 				}
-			}			
+			}
 
 			if (!Uri.TryCreate(baseUrl, UriKind.RelativeOrAbsolute, out Uri requestUri)) {
 				return false;
@@ -235,24 +239,29 @@ namespace WordpressCore.Models.Requests {
 		}
 
 		public RequestBuilder WithPostBody(Func<PostBuilder, HttpContent> builder) {
-			FormBody = builder.Invoke(new PostBuilder());
+			FormBody = builder.Invoke(new PostBuilder().InitializeWithDefaultValues());
 			return this;
 		}
 
 		public RequestBuilder WithMediaBody(Func<MediaBuilder, HttpContent> builder) {
-			FormBody = builder.Invoke(new MediaBuilder());
+			FormBody = builder.Invoke(new MediaBuilder().InitializeWithDefaultValues());
 			return this;
 		}
 
 		public RequestBuilder WithTagBody(Func<TagBuilder, HttpContent> builder) {
-			FormBody = builder.Invoke(new TagBuilder());
+			FormBody = builder.Invoke(new TagBuilder().InitializeWithDefaultValues());
+			return this;
+		}
+
+		public RequestBuilder WithCommentBody(Func<CommentBuilder, HttpContent> builder) {
+			FormBody = builder.Invoke(new CommentBuilder().InitializeWithDefaultValues());
 			return this;
 		}
 
 		public RequestBuilder WithBody<TBuilderType, YBuilderReturnType>(Func<TBuilderType, YBuilderReturnType> builder)
-			where TBuilderType: IRequestBuilder<TBuilderType, YBuilderReturnType>, new()
-			where YBuilderReturnType: HttpContent {
-			FormBody = builder.Invoke(new TBuilderType());
+			where TBuilderType : IRequestBuilder<TBuilderType, YBuilderReturnType>, new()
+			where YBuilderReturnType : HttpContent {
+			FormBody = builder.Invoke(new TBuilderType().InitializeWithDefaultValues());
 			return this;
 		}
 
@@ -373,7 +382,7 @@ namespace WordpressCore.Models.Requests {
 			string endPoint = BaseUri.AbsoluteUri.Substring(BaseUri.AbsoluteUri.LastIndexOf('/'));
 			Debug.WriteLine("Endpoint: " + endPoint);
 
-			switch (orderBy) {				
+			switch (orderBy) {
 				case OrderBy.Date when endPoint.Equals("users", StringComparison.OrdinalIgnoreCase):
 					SortOrder = "registered_date";
 					break;

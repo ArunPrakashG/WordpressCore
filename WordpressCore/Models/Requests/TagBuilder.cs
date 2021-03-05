@@ -8,7 +8,7 @@ namespace WordpressCore.Models.Requests {
 	/// <summary>
 	/// Builder used to build CreateTag request
 	/// </summary>
-	public class TagBuilder : QueryBuilder<PostBuilder>, IRequestBuilder<TagBuilder, HttpContent> {
+	public class TagBuilder : QueryBuilder<TagBuilder>, IRequestBuilder<TagBuilder, HttpContent> {
 		private string Description;
 		private string Name;
 		private string Slug;

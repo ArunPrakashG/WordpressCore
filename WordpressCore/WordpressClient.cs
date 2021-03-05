@@ -371,6 +371,26 @@ namespace WordpressCore {
 			return await ExecuteAsync<Tag>(requestContainer).ConfigureAwait(false);
 		}
 
+		/// <summary>
+		/// Creates a Comment formatted using the request builder.
+		/// </summary>
+		/// <param name="request">The request builder</param>
+		/// <returns></returns>
+		public virtual async Task<Response<Comment>> CreateCommentAsync(Func<RequestBuilder, Request> request) {
+			Request requestContainer = request.Invoke(RequestBuilder.WithBuilder().WithBaseAndEndpoint(Path.Combine(BaseUrl, UrlPath), "comments").WithHttpMethod(HttpMethod.Post));
+			return await ExecuteAsync<Comment>(requestContainer).ConfigureAwait(false);
+		}
+
+		/// <summary>
+		/// Creates a User formatted using the request builder.
+		/// </summary>
+		/// <param name="request">The request builder</param>
+		/// <returns></returns>
+		public virtual async Task<Response<User>> CreateUserAsync(Func<RequestBuilder, Request> request) {
+			Request requestContainer = request.Invoke(RequestBuilder.WithBuilder().WithBaseAndEndpoint(Path.Combine(BaseUrl, UrlPath), "users").WithHttpMethod(HttpMethod.Post));
+			return await ExecuteAsync<User>(requestContainer).ConfigureAwait(false);
+		}
+
 		private static void EndpointStatistics(string requestEndpoint) {
 			try {
 				if (requestEndpoint.Contains('/')) {

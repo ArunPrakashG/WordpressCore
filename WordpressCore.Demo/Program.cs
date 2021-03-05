@@ -43,8 +43,8 @@ namespace WordpressCore.Demo {
 			.WithDefaultRequestHeaders(new KeyValuePair<string, string>("X-Client", "Mobile"), // allows to add custom headers for requests send from this instance
 									   new KeyValuePair<string, string>("X-Version", "1.0"));
 
-			Response<Post> post = await client.CreatePostAsync((builder) => builder
-			.WithBody<PostBuilder, HttpContent>((post) => post
+			Response <Post> post = await client.CreatePostAsync((builder) => builder
+			.WithHttpBody<PostBuilder, HttpContent>((post) => post
 				.WithCategories(10, 31, 44)
 				.WithCommentStatus(CommentStatusValue.Open)
 				.WithContent("This is post content!")
@@ -58,7 +58,7 @@ namespace WordpressCore.Demo {
 				.WithFeaturedImage(7831)
 				.WithTitle("This is a post title!")
 				.Create())
-			.Create());
+			.CreateWithCallback(new Callback(OnException, OnResponseReceived, OnRequestStatus)));
 
 			if (!post.Status) {
 				// Request failed

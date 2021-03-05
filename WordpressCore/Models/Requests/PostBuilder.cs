@@ -228,7 +228,7 @@ namespace WordpressCore.Models.Requests {
 				throw new FileNotFoundException(nameof(imagePath));
 			}
 
-			Responses.Response<Responses.Media> featuredMedia = await client.CreateMediaAsync((builder) => builder.WithBody<MediaBuilder, HttpContent>((media) => media.WithFile(imagePath).Create()).Create());
+			Responses.Response<Responses.Media> featuredMedia = await client.CreateMediaAsync((builder) => builder.WithHttpBody<MediaBuilder, HttpContent>((media) => media.WithFile(imagePath).Create()).Create());
 			FeaturedImageId = featuredMedia.Status ? featuredMedia.Value.Id : 0;
 			return this;
 		}

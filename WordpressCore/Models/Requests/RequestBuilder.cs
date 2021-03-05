@@ -262,7 +262,7 @@ namespace WordpressCore.Models.Requests {
 			return this;
 		}
 
-		public RequestBuilder WithBody<TBuilderType, YBuilderReturnType>(Func<TBuilderType, YBuilderReturnType> builder)
+		public RequestBuilder WithHttpBody<TBuilderType, YBuilderReturnType>(Func<TBuilderType, YBuilderReturnType> builder)
 			where TBuilderType : IRequestBuilder<TBuilderType, YBuilderReturnType>, new()
 			where YBuilderReturnType : HttpContent {
 			FormBody = builder.Invoke(new TBuilderType().InitializeWithDefaultValues());

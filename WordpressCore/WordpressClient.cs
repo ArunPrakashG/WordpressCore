@@ -30,6 +30,7 @@ namespace WordpressCore {
 		private SemaphoreSlim RequestSync;
 		private static Action<string, int> EndpointRequestCountChangedCallback;
 		private static Func<string, bool> GlobalResponsePreprocessorCallback;
+		internal static Func<string, string> HtmlResponseCleanerCallback;
 
 		/// <summary>
 		/// Stores statistical data of requests send through this <see cref="WordpressClient"/> Instance.
@@ -227,6 +228,16 @@ namespace WordpressCore {
 		}
 
 		/// <summary>
+		/// Adds a function to be invoked to strip html tags and sanitize the received response content. such as title, body etc.
+		/// </summary>
+		/// <param name="cleanerDelegate">The delegate</param>
+		/// <returns></returns>
+		public WordpressClient WithHtmlResponseCleaner(Func<string, string> cleanerDelegate) {
+			HtmlResponseCleanerCallback = cleanerDelegate;
+			return this;
+		}
+
+		/// <summary>
 		/// Gets all Categories formatted using the request builder.
 		/// </summary>
 		/// <param name="request">The request builder</param>
@@ -389,6 +400,16 @@ namespace WordpressCore {
 		public virtual async Task<Response<User>> CreateUserAsync(Func<RequestBuilder, Request> request) {
 			Request requestContainer = request.Invoke(RequestBuilder.WithBuilder().WithBaseAndEndpoint(Path.Combine(BaseUrl, UrlPath), "users").WithHttpMethod(HttpMethod.Post));
 			return await ExecuteAsync<User>(requestContainer).ConfigureAwait(false);
+		}
+
+		/// <summary>
+		/// Creates a Category formatted using the request builder.
+		/// </summary>
+		/// <param name="request">The request builder</param>
+		/// <returns></returns>
+		public virtual async Task<Response<Category>> CreateCategoryAsync(Func<RequestBuilder, Request> request) {
+			Request requestContainer = request.Invoke(RequestBuilder.WithBuilder().WithBaseAndEndpoint(Path.Combine(BaseUrl, UrlPath), "categories").WithHttpMethod(HttpMethod.Post));
+			return await ExecuteAsync<Category>(requestContainer).ConfigureAwait(false);
 		}
 
 		private static void EndpointStatistics(string requestEndpoint) {
@@ -664,12 +685,6 @@ namespace WordpressCore {
 			}
 			catch { return; }
 		}
-
-		/*
-		 * P% = 12 ÷ 40
-		 */
-		[Obsolete]
-		private static double CalculateProgress(int currentProgress, int total) => (currentProgress / total) * 100;
 
 		/// <summary>
 		/// Different types of authorization methods supported by this library.

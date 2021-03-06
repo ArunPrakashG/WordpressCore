@@ -26,12 +26,7 @@ namespace WordpressCore {
 			public override void WriteJson(JsonWriter writer, bool value, JsonSerializer serializer) => writer.WriteValue(value);
 		}
 
-		internal static string CleanContent(this string input) {
-			var sanitizer = new HtmlSanitizer();
-			sanitizer.KeepChildNodes = false;
-			return sanitizer.Sanitize(input);
-			//Regex.Replace(input, "<.*?>", String.Empty).Replace("&#8211;", "—").Replace("&nbsp;", " ");
-		}
+		internal static string CleanContent(this string input) => WordpressClient.HtmlResponseCleanerCallback?.Invoke(input);
 
 		internal static string Base64Encode(string plainText) {
 			if (string.IsNullOrEmpty(plainText)) {

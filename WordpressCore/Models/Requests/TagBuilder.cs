@@ -44,6 +44,10 @@ namespace WordpressCore.Models.Requests {
 		/// <param name="slug"></param>
 		/// <returns></returns>
 		public TagBuilder WithSlug(string slug) {
+			if (!Utilites.IsAlphanumeric(slug)) {
+				throw new ArgumentException($"{nameof(slug)} can only contain alphanumeric charecters. (a-Z, 0-9)");
+			}
+
 			Slug = slug;
 			return this;
 		}
@@ -65,7 +69,7 @@ namespace WordpressCore.Models.Requests {
 				values.TryAdd("description", Description);
 			}
 
-			if (!string.IsNullOrEmpty(Slug) && Utilites.IsAlphanumeric(Slug)) {
+			if (!string.IsNullOrEmpty(Slug)) {
 				values.TryAdd("slug", Slug);
 			}
 

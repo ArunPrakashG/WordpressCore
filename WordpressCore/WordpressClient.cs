@@ -412,22 +412,23 @@ namespace WordpressCore {
 			return await ExecuteAsync<Category>(requestContainer).ConfigureAwait(false);
 		}
 
-		private static void EndpointStatistics(string requestEndpoint) {
-			try {
-				if (requestEndpoint.Contains('/')) {
-					requestEndpoint = requestEndpoint.Split('/')[0];
-				}
-
-				if (!EndpointRequestCount.TryGetValue(requestEndpoint, out int value)) {
-					EndpointRequestCount.TryAdd(requestEndpoint, 1);
-				}
-				else {
-					EndpointRequestCount[requestEndpoint]++;
-				}
-
-				Task.Run(() => EndpointRequestCountChangedCallback?.Invoke(requestEndpoint, EndpointRequestCount[requestEndpoint]));
-			}
-			catch { }
+		/// <summary>
+		/// Creates a Delete request for the specified Id.
+		/// </summary>
+		/// <param name="request"></param>
+		/// <returns></returns>
+		public virtual async Task<Response<bool>> DeleteObjectAsync(Func<RequestBuilder, Request> request) {
+			Response<HttpResponseMessage> response = await DeleteRequestAsync(request.Invoke(
+				RequestBuilder.WithBuilder()
+					.WithBaseAndEndpoint(Path.Combine(BaseUrl, UrlPath), "")
+					.WithHttpMethod(HttpMethod.Delete))).ConfigureAwait(false);
+			return new Response<bool>(response.Status)
+				.SetDuration(response.Duration)
+				.SetMessage(response.Message)
+				.SetHeaders(response.Headers)
+				.SetException(response.RequestException)
+				.SetStatus(response.Status)
+				.SetStatusCode(response.StatusCode);
 		}
 
 		/// <summary>
@@ -449,10 +450,6 @@ namespace WordpressCore {
 				return PutRequestAsync<T>(request, cancellationToken);
 			}
 
-			if (request.RequestMethod == HttpMethod.Delete) {
-				return DeleteRequestAsync<T>(request, cancellationToken);
-			}
-
 			return GetRequestAsync<T>(request, cancellationToken);
 		}
 
@@ -472,8 +469,94 @@ namespace WordpressCore {
 		/// <param name="request">The Request object</param>
 		/// <param name="cancellationToken">The Cancellation Token (if any)</param>
 		/// <returns></returns>
-		protected virtual async Task<Response<T>> DeleteRequestAsync<T>(Request request, CancellationToken cancellationToken = default) where T : class {
-			throw new NotImplementedException();
+		protected virtual async Task<Response<HttpResponseMessage>> DeleteRequestAsync(Request request, CancellationToken cancellationToken = default) {
+			if (request == null || !request.IsRequestExecutable) {
+				return default;
+			}
+
+			if (Threadsafe) {
+				await RequestSync.WaitAsync().ConfigureAwait(false);
+			}
+
+			Response<HttpResponseMessage> responseContainer = new Response<HttpResponseMessage>();
+			Stopwatch watch = new Stopwatch();
+
+			try {
+				using (HttpRequestMessage httpRequest = new HttpRequestMessage(HttpMethod.Delete, request.RequestUri)) {
+					if (request.Token != default) {
+						cancellationToken = request.Token;
+					}
+
+					if (cancellationToken == default) {
+						cancellationToken = new CancellationTokenSource(TimeSpan.FromSeconds(TIMEOUT)).Token;
+					}
+
+					if (request.HasHeaders) {
+						httpRequest.TryAddHeaders(request.Headers);
+					}
+
+					if (request.HasFormContent) {
+						httpRequest.Content = request.FormBody;
+					}
+
+					if (request.ShouldAuthorize && !await Utilites.AuthorizeRequest(httpRequest, Client, BaseUrl, request.Authorization, request.Callback).ConfigureAwait(false)) {
+						SetResponseContainerValues(ref watch, ref responseContainer, null);
+						responseContainer.SetValue(default);
+						responseContainer.SetMessage("Authorization failed.");
+						return responseContainer;
+					}
+
+					watch.Start();
+					using (HttpResponseMessage response = await Client.SendAsync(httpRequest, cancellationToken).ConfigureAwait(false)) {
+						watch.Stop();
+
+						string responseContent = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+						if (!response.IsSuccessStatusCode || string.IsNullOrEmpty(responseContent) || responseContent.Length <= 4) {
+							SetResponseContainerValues(ref watch, ref responseContainer, response);
+							responseContainer.SetMessage($"Request failed with ({(int) response.StatusCode}) [{response.StatusCode}] status.", "----------------------------", responseContent, "----------------------------");
+							return responseContainer.SetValue(default);
+						}
+
+						await Task.Run(() => EndpointStatistics(request.Endpoint)).ConfigureAwait(false);
+
+						if (GlobalResponsePreprocessorCallback != null && !GlobalResponsePreprocessorCallback.Invoke(responseContent)) {
+							SetResponseContainerValues(ref watch, ref responseContainer, response);
+							responseContainer.SetMessage($"Request aborted with ({(int) response.StatusCode}) [Globally defined validation restricted] status.", "----------------------------", responseContent, "----------------------------");
+							return responseContainer.SetValue(default);
+						}
+
+						request.Callback?.ResponseCallback?.Invoke(responseContent);
+
+						if (request.ShouldValidateResponse && !request.ValidationDelegate.Invoke(responseContent)) {
+							SetResponseContainerValues(ref watch, ref responseContainer, response);
+							responseContainer.SetMessage($"Request aborted with ({(int) response.StatusCode}) [User defined validation restricted] status.", "----------------------------", responseContent, "----------------------------");
+							return responseContainer.SetValue(default);
+						}
+
+						SetResponseContainerValues(ref watch, ref responseContainer, response);
+						responseContainer.SetMessage($"Request success with ({(int) response.StatusCode}) [{response.StatusCode}] status.", "----------------------------", responseContent, "----------------------------");
+						return responseContainer.SetValue(response);
+					}
+				}
+			}
+			catch (OperationCanceledException oc) {
+				request.Callback?.RequestCallback?.Invoke(new RequestStatus(false, "Operation cancelled. (passed timeout limit)"));
+				SetResponseContainerValues(ref watch, ref responseContainer, null);
+				responseContainer.SetMessage($"Request exceptioned occured. ({oc.HResult}) [Passed timeout limit]", "----------------------------", oc.Message, "----------------------------");
+				return responseContainer.SetException(oc).SetValue(default);
+			}
+			catch (Exception e) {
+				request.Callback?.UnhandledExceptionCallback?.Invoke(e);
+				request.Callback?.RequestCallback?.Invoke(new RequestStatus(false, e.Message));
+				SetResponseContainerValues(ref watch, ref responseContainer, null);
+				responseContainer.SetMessage($"Request exceptioned occured. ({e.HResult}) [{e.Message}]", "----------------------------", e.Message, "----------------------------");
+				return responseContainer.SetException(e).SetValue(default);
+			}
+			finally {
+				if (Threadsafe) {
+					RequestSync.Release();
+				}
+			}
 		}
 
 		/// <summary>
@@ -684,6 +767,24 @@ namespace WordpressCore {
 				responseContainer.SetHeaders(headerCollection);
 			}
 			catch { return; }
+		}
+
+		private static void EndpointStatistics(string requestEndpoint) {
+			try {
+				if (requestEndpoint.Contains('/')) {
+					requestEndpoint = requestEndpoint.Split('/')[0];
+				}
+
+				if (!EndpointRequestCount.TryGetValue(requestEndpoint, out int value)) {
+					EndpointRequestCount.TryAdd(requestEndpoint, 1);
+				}
+				else {
+					EndpointRequestCount[requestEndpoint]++;
+				}
+
+				Task.Run(() => EndpointRequestCountChangedCallback?.Invoke(requestEndpoint, EndpointRequestCount[requestEndpoint]));
+			}
+			catch { }
 		}
 
 		/// <summary>

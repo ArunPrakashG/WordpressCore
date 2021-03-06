@@ -45,6 +45,9 @@ namespace WordpressCore.Models.Requests {
 		private HttpMethod Method;
 		private IDictionary<string, string> Headers;
 		private HttpContent FormBody;
+		private string DeleteRequestUrl;
+
+		private bool IsDeleteRequest => !string.IsNullOrEmpty(DeleteRequestUrl);
 
 		/// <summary>
 		/// Constructor to set Request Base Url and the Endpoint to use.
@@ -95,6 +98,11 @@ namespace WordpressCore.Models.Requests {
 
 		private bool CreateUri() {
 			string baseUrl = BaseUri.OriginalString;
+
+			if (IsDeleteRequest) {
+				baseUrl += DeleteRequestUrl ?? throw new NullReferenceException(nameof(DeleteRequestUrl));
+				goto Parse;
+			}
 
 			if (FormBody == null || FormBody.Headers.Any()) {
 				char joiningChar = ContainsQueryValues(baseUrl, out bool hasMultiple) && hasMultiple ? '&' : '?';
@@ -189,6 +197,7 @@ namespace WordpressCore.Models.Requests {
 				}
 			}
 
+		Parse:
 			if (!Uri.TryCreate(baseUrl, UriKind.RelativeOrAbsolute, out Uri requestUri)) {
 				return false;
 			}
@@ -198,7 +207,7 @@ namespace WordpressCore.Models.Requests {
 		}
 
 		internal RequestBuilder WithBaseAndEndpoint(string requestUrlBase, string endpoint) {
-			if (string.IsNullOrEmpty(requestUrlBase) || string.IsNullOrEmpty(endpoint)) {
+			if (string.IsNullOrEmpty(requestUrlBase)) {
 				throw new ArgumentNullException(nameof(requestUrlBase));
 			}
 
@@ -213,6 +222,17 @@ namespace WordpressCore.Models.Requests {
 
 		internal RequestBuilder WithUri(Uri requestUri) {
 			BaseUri = requestUri ?? throw new ArgumentNullException(nameof(requestUri));
+			return this;
+		}
+
+		/// <summary>
+		/// Transforms current request to a delete request.
+		/// <para>i.e., Only deletion of an object is supported hereafter on this request.</para>
+		/// </summary>
+		/// <param name="builder">The <see cref="DeleteRequestBuilder"/></param>
+		/// <returns></returns>
+		public RequestBuilder AsDeleteRequest(Func<DeleteRequestBuilder, string> builder) {
+			DeleteRequestUrl = builder.Invoke(new DeleteRequestBuilder()) ?? throw new InvalidOperationException("Build delete request url is invalid.");
 			return this;
 		}
 

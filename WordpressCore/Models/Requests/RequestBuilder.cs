@@ -93,7 +93,28 @@ namespace WordpressCore.Models.Requests {
 			}
 
 			hasMultiple = hasFirstQuery && queryCount > 0;
-			return hasMultiple || hasFirstQuery || queryCount > 0;
+			bool result = hasMultiple || hasFirstQuery || queryCount > 0;
+			return result;
+		}
+
+		private static char GetJoiningChar(ref string baseUrl) {
+			if (string.IsNullOrEmpty(baseUrl)) {
+				throw new NullReferenceException(nameof(baseUrl));
+			}
+
+			if((baseUrl.Contains("?") && !baseUrl.Contains("&")) || baseUrl.Contains("?") && baseUrl.Contains("&")) {
+				return '&';
+			}
+
+			if(baseUrl.Contains("?") && baseUrl.Contains("&")) {
+				return '&';
+			}
+
+			if (!baseUrl.Contains("?")) {
+				return '?';
+			}
+
+			return '&';
 		}
 
 		private bool CreateUri() {
@@ -105,95 +126,93 @@ namespace WordpressCore.Models.Requests {
 			}
 
 			if (FormBody == null || FormBody.Headers.Any()) {
-				char joiningChar = ContainsQueryValues(baseUrl, out bool hasMultiple) && hasMultiple ? '&' : '?';
-
 				// because context value is ignored mostly on those pages which doesn't require it.
 				if (!string.IsNullOrEmpty(Context)) {
-					baseUrl += $"{joiningChar}context={Context}";
+					baseUrl += $"{GetJoiningChar(ref baseUrl)}context={Context}";
 				}
 
 				if (PageNumber >= 1) {
-					baseUrl += $"{joiningChar}page={PageNumber}";
+					baseUrl += $"{GetJoiningChar(ref baseUrl)}page={PageNumber}";
 				}
 
 				if (PerPageCount >= 1) {
-					baseUrl += $"{joiningChar}per_page={(PerPageCount <= 0 ? 10 : PerPageCount)}";
+					baseUrl += $"{GetJoiningChar(ref baseUrl)}per_page={(PerPageCount <= 0 ? 10 : PerPageCount)}";
 				}
 
 				if (!string.IsNullOrEmpty(SearchQuery)) {
-					baseUrl += $"{joiningChar}search={SearchQuery}";
+					baseUrl += $"{GetJoiningChar(ref baseUrl)}search={SearchQuery}";
 				}
 
 				if (Embeded) {
-					baseUrl += $"{joiningChar}_embed=1";
+					baseUrl += $"{GetJoiningChar(ref baseUrl)}_embed=1";
 				}
 
 				if (After != DateTime.MinValue) {
-					baseUrl += $"{joiningChar}after={After.ToString("o", CultureInfo.InvariantCulture)}";
+					baseUrl += $"{GetJoiningChar(ref baseUrl)}after={After.ToString("o", CultureInfo.InvariantCulture)}";
 				}
 
 				if (Before != DateTime.MinValue) {
-					baseUrl += $"{joiningChar}before={Before.ToString("o", CultureInfo.InvariantCulture)}";
+					baseUrl += $"{GetJoiningChar(ref baseUrl)}before={Before.ToString("o", CultureInfo.InvariantCulture)}";
 				}
 
 				if (AllowedAuthors != null && AllowedAuthors.Count > 0) {
-					baseUrl += $"{joiningChar}author={string.Join(",", AllowedAuthors)}";
+					baseUrl += $"{GetJoiningChar(ref baseUrl)}author={string.Join(",", AllowedAuthors)}";
 				}
 
 				if (ExcludedAuthors != null && ExcludedAuthors.Count > 0) {
-					baseUrl += $"{joiningChar}author_exclude={string.Join(",", ExcludedAuthors)}";
+					baseUrl += $"{GetJoiningChar(ref baseUrl)}author_exclude={string.Join(",", ExcludedAuthors)}";
 				}
 
 				if (AllowedIds != null && AllowedIds.Count > 0) {
-					baseUrl += $"{joiningChar}include={string.Join(",", AllowedIds)}";
+					baseUrl += $"{GetJoiningChar(ref baseUrl)}include={string.Join(",", AllowedIds)}";
 				}
 
 				if (ExcludedIds != null && ExcludedIds.Count > 0) {
-					baseUrl += $"{joiningChar}exclude={string.Join(",", ExcludedIds)}";
+					baseUrl += $"{GetJoiningChar(ref baseUrl)}exclude={string.Join(",", ExcludedIds)}";
 				}
 
 				if (ResultOffset > 0) {
-					baseUrl += $"{joiningChar}offset={ResultOffset}";
+					baseUrl += $"{GetJoiningChar(ref baseUrl)}offset={ResultOffset}";
 				}
 
 				if (!string.IsNullOrEmpty(SortOrder)) {
-					baseUrl += $"{joiningChar}order={SortOrder}";
+					baseUrl += $"{GetJoiningChar(ref baseUrl)}order={SortOrder}";
 				}
 
 				if (!string.IsNullOrEmpty(ResultOrder)) {
-					baseUrl += $"{joiningChar}orderby={ResultOrder}";
+					baseUrl += $"{GetJoiningChar(ref baseUrl)}orderby={ResultOrder}";
 				}
 
 				if (LimitBySlug != null && LimitBySlug.Count > 0) {
-					baseUrl += $"{joiningChar}slug={string.Join(",", LimitBySlug)}";
+					baseUrl += $"{GetJoiningChar(ref baseUrl)}slug={string.Join(",", LimitBySlug)}";
 				}
 
 				if (!string.IsNullOrEmpty(LimitByStatus)) {
-					baseUrl += $"{joiningChar}status={LimitByStatus}";
+					baseUrl += $"{GetJoiningChar(ref baseUrl)}status={LimitByStatus}";
 				}
 
 				if (!string.IsNullOrEmpty(LimitByTaxonomyRelation)) {
-					baseUrl += $"{joiningChar}tax_relation={LimitByTaxonomyRelation}";
+					baseUrl += $"{GetJoiningChar(ref baseUrl)}tax_relation={LimitByTaxonomyRelation}";
 				}
 
 				if (AllowedCategories != null && AllowedCategories.Count > 0) {
-					baseUrl += $"{joiningChar}categories={string.Join(",", AllowedCategories)}";
+					baseUrl += $"{GetJoiningChar(ref baseUrl)}categories={string.Join(",", AllowedCategories)}";
 				}
 
 				if (ExcludedCategories != null && ExcludedCategories.Count > 0) {
-					baseUrl += $"{joiningChar}categories_exclude={string.Join(",", ExcludedCategories)}";
+					baseUrl += $"{GetJoiningChar(ref baseUrl)}categories_exclude={string.Join(",", ExcludedCategories)}";
 				}
 
 				if (AllowedTags != null && AllowedTags.Count > 0) {
-					baseUrl += $"{joiningChar}tags={string.Join(",", AllowedTags)}";
+					baseUrl += $"{GetJoiningChar(ref baseUrl)}tags={string.Join(",", AllowedTags)}";
 				}
 
 				if (ExcludedTags != null && ExcludedTags.Count > 0) {
-					baseUrl += $"{joiningChar}tags_exclude={string.Join(",", ExcludedTags)}";
+					baseUrl += $"{GetJoiningChar(ref baseUrl)}tags_exclude={string.Join(",", ExcludedTags)}";
 				}
 
 				if (OnlySticky) {
-					baseUrl += $"{joiningChar}sticky=1";
+					baseUrl += $"{GetJoiningChar(ref baseUrl)}sticky=1";
 				}
 			}
 

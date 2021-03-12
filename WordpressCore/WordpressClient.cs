@@ -413,7 +413,7 @@ namespace WordpressCore {
 		}
 
 		/// <summary>
-		/// Creates a Delete request for the specified Id.
+		/// Creates a Delete request for object with the specified Id.
 		/// </summary>
 		/// <param name="request"></param>
 		/// <returns></returns>

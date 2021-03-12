@@ -11,10 +11,12 @@ using static WordpressCore.WordpressClient;
 namespace WordpressCore {
 	/// <summary>
 	/// Class which handles authorization system
+	/// <para>Inheritable and overridable to support custom system of authorization.</para>
 	/// </summary>
 	public class WordpressAuthorization {
-		internal static WordpressAuthorization Default => new WordpressAuthorization(string.Empty, string.Empty, type: AuthorizationType.NoAuth);
 		internal bool IsDefault => string.IsNullOrEmpty(UserName) || string.IsNullOrEmpty(Password);
+
+		internal static WordpressAuthorization Default => new WordpressAuthorization(string.Empty, string.Empty, type: AuthorizationType.NoAuth);		
 		internal readonly string UserName;
 		internal readonly string Password;
 		internal readonly string JwtToken;
@@ -28,11 +30,11 @@ namespace WordpressCore {
 		/// </summary>
 		/// <param name="userName">The user name</param>
 		/// <param name="passWord">The password</param>
-		/// <param name="jwtToken">The JWT Token if it is already known.</param>
+		/// <param name="jwtToken">The JWT Token if it is already stored within the calling context. (will skip requesting it)</param>
 		/// <param name="type">The type of authorization method to use.</param>
-		public WordpressAuthorization(string userName, string passWord, string jwtToken = null, AuthorizationType type = AuthorizationType.NoAuth) {
-			UserName = userName;
-			Password = passWord;
+		public WordpressAuthorization(string userName, string passWord, AuthorizationType type = AuthorizationType.Basic, string jwtToken = null) {
+			UserName = userName ?? throw new ArgumentNullException($"{nameof(userName)} can't be an empty or null value.");
+			Password = passWord ?? throw new ArgumentNullException($"{nameof(passWord)} can't be an empty or null value.");
 			JwtToken = jwtToken;
 			AuthorizationType = type;
 			Scheme = string.Empty;
@@ -53,7 +55,14 @@ namespace WordpressCore {
 			}
 		}
 
-		internal async Task<bool> HandleJwtAuthentication(string baseUrl, HttpClient client, Callback callback = null) {
+		/// <summary>
+		/// Handles JWT Authentication with the Username and Password supplied while creating this instance.
+		/// </summary>
+		/// <param name="baseUrl"></param>
+		/// <param name="client"></param>
+		/// <param name="callback"></param>
+		/// <returns></returns>
+		internal virtual async Task<bool> HandleJwtAuthentication(string baseUrl, HttpClient client, Callback callback = null) {
 			if (AuthorizationType != AuthorizationType.Jwt || client == null || string.IsNullOrEmpty(baseUrl)) {
 				return false;
 			}
@@ -90,7 +99,13 @@ namespace WordpressCore {
 			}
 		}
 
-		private async Task<bool> ValidateExistingToken(string baseUrl, HttpClient client) {
+		/// <summary>
+		/// Handles validation of an existing JWT Token.
+		/// </summary>
+		/// <param name="baseUrl">The base url of the wordpress site</param>
+		/// <param name="client">The HttpClient to use</param>
+		/// <returns></returns>
+		protected virtual async Task<bool> ValidateExistingToken(string baseUrl, HttpClient client) {
 			if (AuthorizationType != AuthorizationType.Jwt || client == null || string.IsNullOrEmpty(baseUrl) || string.IsNullOrEmpty(EncryptedAccessToken)) {
 				return false;
 			}

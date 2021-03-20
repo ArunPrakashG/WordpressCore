@@ -374,6 +374,18 @@ namespace WordpressCore.Models.Requests {
 		}
 
 		/// <summary>
+		/// Transforms the request to support a Popular Post body.
+		/// <para><see href="https://github.com/cabrerahector/wordpress-popular-posts/"/> plugin required</para>
+		/// <para>(used for CreateCategory() Requests)</para>
+		/// </summary>
+		/// <param name="builder"></param>
+		/// <returns></returns>
+		public RequestBuilder WithPopularPostsBody(Func<PopularPostsBuilder, HttpContent> builder) {
+			FormBody = builder.Invoke(new PopularPostsBuilder().InitializeWithDefaultValues());
+			return this;
+		}
+
+		/// <summary>
 		/// Generic overload for WithBody() Requests.
 		/// Transforms the request to support an <see cref="HttpContent"/> body.
 		/// <para>(used for Create() Requests)</para>

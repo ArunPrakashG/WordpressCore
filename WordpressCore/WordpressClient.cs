@@ -298,6 +298,17 @@ namespace WordpressCore {
 		}
 
 		/// <summary>
+		/// Gets all Popular posts formatted using the request builder.
+		/// <para><see href="https://github.com/cabrerahector/wordpress-popular-posts/"/> plugin required</para>
+		/// </summary>
+		/// <param name="request">The request builder</param>
+		/// <returns></returns>
+		public virtual async Task<Response<IEnumerable<Post>>> GetPopularPostsAsync(Func<RequestBuilder, Request> request) {
+			Request requestContainer = request.Invoke(RequestBuilder.WithBuilder().WithBaseAndEndpoint(Path.Combine(BaseUrl, "wordpress-popular-posts/v1/"), "popular-posts"));
+			return await ExecuteAsync<IEnumerable<Post>>(requestContainer).ConfigureAwait(false);
+		}
+
+		/// <summary>
 		/// Gets Post with the specified postId formatted using the request builder.
 		/// </summary>
 		/// <param name="postId">The Post ID</param>

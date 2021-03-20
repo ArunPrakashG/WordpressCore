@@ -15,9 +15,9 @@
     <EnableNETAnalyzers>true</EnableNETAnalyzers>
     <Nullable>disable</Nullable>
     <NeutralLanguage>en-US</NeutralLanguage>
-    <AssemblyVersion>1.3.3.0</AssemblyVersion>
-    <FileVersion>1.3.3.0</FileVersion>
-    <Version>1.3.3.0</Version>
+    <AssemblyVersion>1.3.4.0</AssemblyVersion>
+    <FileVersion>1.3.4.0</FileVersion>
+    <Version>1.3.4.0</Version>
     <AssemblyOriginatorKeyFile>GeneralSign.pfx</AssemblyOriginatorKeyFile>
     <DelaySign>false</DelaySign>
     <AssemblyName>WordpressCore</AssemblyName>

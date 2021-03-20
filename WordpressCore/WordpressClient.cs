@@ -442,6 +442,11 @@ namespace WordpressCore {
 				.SetStatusCode(response.StatusCode);
 		}
 
+		public virtual async Task<Response<T>> ExecuteCustomRequestAsync<T>(string requestBase, string requestEndpoint, HttpMethod method, Func<RequestBuilder, Request> request) where T: class {
+			Request requestContainer = request.Invoke(RequestBuilder.WithBuilder().WithBaseAndEndpoint(requestBase, requestEndpoint).WithHttpMethod(method));
+			return await ExecuteAsync<T>(requestContainer).ConfigureAwait(false);
+		}
+
 		/// <summary>
 		/// Wrapper for internal execution functions.
 		/// </summary>

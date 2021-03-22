@@ -8,45 +8,39 @@ using System.Threading.Tasks;
 using WordpressCore.Models.Requests;
 using WordpressCore.Models.Responses;
 using static WordpressCore.Models.Requests.Enums;
+using static WordpressCore.Models.Requests.PopularPostsBuilder;
 
 namespace WordpressCore.Demo {
 	internal class Program {
 		private static async Task<int> Main(string[] args) {
 			CookieContainer container = new CookieContainer();
 			CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
-			WordpressClient client = new WordpressClient("base url", maxConcurrentRequestsPerInstance: 8, timeout: 60)
-			.WithDefaultUserAgent("WordpressClient")
+			WordpressClient client = new WordpressClient("test", maxConcurrentRequestsPerInstance: 8, timeout: 60)			
 			.WithCookieContainer(ref container)			
 			.WithJsonSerializerSetting(new JsonSerializerSettings() {
 				ConstructorHandling = ConstructorHandling.AllowNonPublicDefaultConstructor,
 				MissingMemberHandling = MissingMemberHandling.Ignore
 			});
 
-			await client.WithDefaultAuthorization(new WordpressAuthorization("tst", "test", type: WordpressClient.AuthorizationType.Jwt)).ConfigureAwait(false);
+			Response<IEnumerable<Post>> posts = await client.GetPopularPostsAsync((builder) => builder
+				.WithPopularPostsBody((pop) => pop
+					.WithLimit(50)
+					.WithPopularPostsOrder(OrderPopularPostsBy.Views)
+					.WithRange(TimeRange.Last24Hours)
+					.Create())
+				.WithCancellationToken(new CancellationTokenSource(TimeSpan.FromSeconds(30)).Token)
+				.CreateWithCallback(new Callback(OnException, OnResponseReceived, OnRequestStatus)));
 
-			Response <Post> post = await client.CreatePostAsync((builder) => builder
-			.WithHttpBody<PostBuilder, HttpContent>((post) => post
-				.WithCategories(10, 31, 44)
-				.WithCommentStatus(CommentStatusValue.Open)
-				.WithContent("This is post content!")
-				.WithExcerpt("This is an Excerpt!")
-				.WithFormat(PostFormat.Standard)
-				.WithPingStatus(PingStatusValue.Open)
-				.WithSlug("post-slug")
-				.WithStatus(PostStatus.Draft)
-				.WithTags(0, 23, 42)
-				.WithFeaturedImage(client, "585e4da1cb11b227491c339c.png").GetAwaiter().GetResult()
-				.WithTitle("This is a post title!")
-				.Create())
-			.CreateWithCallback(new Callback(OnException, OnResponseReceived, OnRequestStatus)));
-
-			if (!post.Status) {
+			if (!posts.Status) {
 				// Request failed
-				Console.WriteLine(post.Message);
+				Console.WriteLine(posts.Message);
 				return -1;
 			}
 
-			Console.WriteLine("Post created: " + post.Value.Id);
+			foreach(var post in posts.Value) {
+				Console.WriteLine(post.Id);
+			}
+
 			Console.ReadKey();
 			return 0;
 		}

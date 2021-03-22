@@ -7,6 +7,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Threading;
 using WordpressCore.Interfaces;
+using static WordpressCore.LibraryExtensions;
 using static WordpressCore.Models.Requests.Enums;
 
 namespace WordpressCore.Models.Requests {
@@ -44,6 +45,7 @@ namespace WordpressCore.Models.Requests {
 		private Func<string, bool> ResponseValidationDelegate;
 		private HttpMethod Method;
 		private IDictionary<string, string> Headers;
+		private IDictionary<string, string> QueryParameters;
 		private HttpContent FormBody;
 		private string DeleteRequestUrl;
 
@@ -214,6 +216,12 @@ namespace WordpressCore.Models.Requests {
 				if (OnlySticky) {
 					baseUrl += $"{GetJoiningChar(ref baseUrl)}sticky=1";
 				}
+
+				if(QueryParameters != null && QueryParameters.Count > 0) {
+					foreach(KeyValuePair<string, string> pair in QueryParameters) {
+						baseUrl += $"{GetJoiningChar(ref baseUrl)}{pair.Key}={pair.Value}";
+					}
+				}
 			}
 
 		Parse:
@@ -374,14 +382,20 @@ namespace WordpressCore.Models.Requests {
 		}
 
 		/// <summary>
-		/// Transforms the request to support a Popular Post body.
+		/// Transforms the request to support a Popular Post query values.
 		/// <para><see href="https://github.com/cabrerahector/wordpress-popular-posts/"/> plugin required</para>
-		/// <para>(used for CreateCategory() Requests)</para>
+		/// <para>(used for GetPopularPosts() Requests)</para>
 		/// </summary>
 		/// <param name="builder"></param>
 		/// <returns></returns>
-		public RequestBuilder WithPopularPostsBody(Func<PopularPostsBuilder, HttpContent> builder) {
-			FormBody = builder.Invoke(new PopularPostsBuilder().InitializeWithDefaultValues());
+		public RequestBuilder WithPopularPostsQuery(Func<PopularPostsBuilder, Dictionary<string, string>> builder) {
+			if(QueryParameters == null) {
+				QueryParameters = builder.Invoke(new PopularPostsBuilder().InitializeWithDefaultValues());
+			}
+			else {
+				QueryParameters.Append(builder.Invoke(new PopularPostsBuilder().InitializeWithDefaultValues()));
+			}
+			
 			return this;
 		}
 
@@ -396,6 +410,26 @@ namespace WordpressCore.Models.Requests {
 			where TBuilderType : IRequestBuilder<TBuilderType, YBuilderReturnType>, new()
 			where YBuilderReturnType : HttpContent {
 			FormBody = builder.Invoke(new TBuilderType().InitializeWithDefaultValues());
+			return this;
+		}
+
+		/// <summary>
+		/// Generic overload for WithQuery() Requests.
+		/// Transforms the request to support an <see cref="HttpContent"/> body.
+		/// <para>(used for Get() Requests)</para>
+		/// </summary>
+		/// <param name="builder"></param>
+		/// <returns></returns>
+		public RequestBuilder WithQueryParameters<TBuilderType, YBuilderReturnType>(Func<TBuilderType, YBuilderReturnType> builder)
+			where TBuilderType : IRequestBuilder<TBuilderType, YBuilderReturnType>, new()
+			where YBuilderReturnType : IDictionary<string, string> {
+			if (QueryParameters == null) {
+				QueryParameters = builder.Invoke(new TBuilderType().InitializeWithDefaultValues());
+			}
+			else {
+				QueryParameters.Append(builder.Invoke(new TBuilderType().InitializeWithDefaultValues()));
+			}
+
 			return this;
 		}
 

@@ -8,7 +8,7 @@ namespace WordpressCore.Models.Requests {
 	/// <summary>
 	/// Builder used to build GetPopularPosts request
 	/// </summary>
-	public class PopularPostsBuilder : QueryBuilder<PopularPostsBuilder>, IRequestBuilder<PopularPostsBuilder, HttpContent> {
+	public class PopularPostsBuilder : QueryBuilder<PopularPostsBuilder>, IRequestBuilder<PopularPostsBuilder, Dictionary<string, string>> {
 		private string[] PostType;
 		private int Limit;
 		private bool Freshness;
@@ -26,7 +26,7 @@ namespace WordpressCore.Models.Requests {
 		/// <inheritdoc />
 		/// </summary>
 		/// <returns></returns>
-		public HttpContent Create() {
+		public Dictionary<string, string> Create() {
 			Dictionary<string, string> formContent = new Dictionary<string, string> {				
 				{ "limit", Limit.ToString() },
 				{ "freshness", Freshness ? "1" : "0" },
@@ -57,7 +57,7 @@ namespace WordpressCore.Models.Requests {
 				formContent.Add("author", string.Join(',', AllowedAuthors));
 			}
 
-			return new FormUrlEncodedContent(formContent);
+			return formContent;
 		}
 
 		/// <summary>

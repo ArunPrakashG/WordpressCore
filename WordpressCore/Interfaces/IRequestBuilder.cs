@@ -18,7 +18,7 @@ namespace WordpressCore.Interfaces {
 		YRequestType InitializeWithDefaultValues();
 
 		/// <summary>
-		/// Creates <see cref="HttpContent"/> which is to be send with the request.
+		/// Creates <typeparamref name="TReturnType"/> which is to be send with the request.
 		/// </summary>
 		/// <returns></returns>
 		TReturnType Create();

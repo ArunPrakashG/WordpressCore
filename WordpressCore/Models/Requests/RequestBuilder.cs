@@ -434,6 +434,24 @@ namespace WordpressCore.Models.Requests {
 		}
 
 		/// <summary>
+		/// Non - Generic overload for WithQuery() Requests.
+		/// Transforms the request to support an <see cref="HttpContent"/> body.
+		/// <para>(used for Get() Requests)</para>
+		/// </summary>
+		/// <param name="builder"></param>
+		/// <returns></returns>
+		public RequestBuilder WithQueryParameters(params KeyValuePair<string, string>[] queryParameter) {
+			if (QueryParameters == null) {
+				QueryParameters = new Dictionary<string, string>(queryParameter);
+			}
+			else {
+				QueryParameters.Append(new Dictionary<string, string>(queryParameter));
+			}
+
+			return this;
+		}
+
+		/// <summary>
 		/// Adds additional headers to the request.
 		/// </summary>
 		/// <param name="headers">The headers</param>

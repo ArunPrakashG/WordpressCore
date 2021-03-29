@@ -16,7 +16,7 @@ namespace WordpressCore {
 	public class WordpressAuthorization {
 		internal bool IsDefault => string.IsNullOrEmpty(UserName) || string.IsNullOrEmpty(Password);
 
-		internal static WordpressAuthorization Default => new WordpressAuthorization(string.Empty, string.Empty, type: AuthorizationType.NoAuth);		
+		internal static WordpressAuthorization Default => new(string.Empty, string.Empty, type: AuthorizationType.NoAuth);		
 		internal readonly string UserName;
 		internal readonly string Password;
 		internal readonly string JwtToken;
@@ -26,6 +26,11 @@ namespace WordpressCore {
 		private bool HasValidatedOnce;
 
 		/// <summary>
+		/// Returns true if user access token is fetched.
+		/// </summary>
+		public bool IsValidAuth => !string.IsNullOrEmpty(EncryptedAccessToken);
+
+		/// <summary>
 		/// Instantiate an authorization handler for requests.
 		/// </summary>
 		/// <param name="userName">The user name</param>
@@ -33,8 +38,8 @@ namespace WordpressCore {
 		/// <param name="jwtToken">The JWT Token if it is already stored within the calling context. (will skip requesting it)</param>
 		/// <param name="type">The type of authorization method to use.</param>
 		public WordpressAuthorization(string userName, string passWord, AuthorizationType type = AuthorizationType.Basic, string jwtToken = null) {
-			UserName = userName ?? throw new ArgumentNullException($"{nameof(userName)} can't be an empty or null value.");
-			Password = passWord ?? throw new ArgumentNullException($"{nameof(passWord)} can't be an empty or null value.");
+			UserName = userName ?? throw new ArgumentNullException(nameof(userName));
+			Password = passWord ?? throw new ArgumentNullException(nameof(passWord));
 			JwtToken = jwtToken;
 			AuthorizationType = type;
 			Scheme = string.Empty;
@@ -53,6 +58,20 @@ namespace WordpressCore {
 						break;
 				}
 			}
+		}
+
+		/// <summary>
+		/// Checks if current user is logged in.
+		/// </summary>
+		/// <param name="client"></param>
+		/// <param name="callback"></param>
+		/// <returns></returns>
+		public async Task<bool> IsLoggedInAsync(WordpressClient client, Callback callback = null) {
+			var currentUser = await client.GetCurrentUserAsync((builder) => builder
+				.WithAuthorization(this)
+				.CreateWithCallback(callback));
+
+			return currentUser != null && currentUser.Status;
 		}
 
 		/// <summary>
@@ -88,7 +107,7 @@ namespace WordpressCore {
 						}
 
 						Token token = JsonConvert.DeserializeObject<Token>(await response.Content.ReadAsStringAsync());
-						EncryptedAccessToken = token.Container.Token;
+						EncryptedAccessToken = token.TokenValue;
 						return true;
 					}
 				}
@@ -110,7 +129,7 @@ namespace WordpressCore {
 				return false;
 			}
 
-			using (HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Post, Path.Combine(baseUrl, "jwt-auth/v1/token/validate"))) {
+			using (HttpRequestMessage request = new(HttpMethod.Post, Path.Combine(baseUrl, "jwt-auth/v1/token/validate"))) {
 				request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", EncryptedAccessToken);
 
 				try {
@@ -120,7 +139,43 @@ namespace WordpressCore {
 						}
 
 						Validate validation = JsonConvert.DeserializeObject<Validate>(await response.Content.ReadAsStringAsync());
-						HasValidatedOnce = validation.IsSuccess;
+
+						if (validation == null || string.IsNullOrEmpty(validation.JwtStatusCode)) {
+							return false;
+						}
+
+						HasValidatedOnce = validation.JwtStatusCode.Equals("jwt_auth_valid_token");
+						return validation.JwtStatusCode.Equals("jwt_auth_valid_token");
+					}
+				}
+				catch {
+					return false;
+				}
+			}
+		}
+
+		/// <summary>
+		/// Validate existing JWT Token
+		/// </summary>
+		/// <param name="baseUrl"></param>
+		/// <param name="accessToken"></param>
+		/// <param name="client"></param>
+		/// <returns></returns>
+		public static async Task<bool> ValidateJwtToken(string baseUrl, string accessToken, WordpressClient client) {
+			if(string.IsNullOrEmpty(baseUrl) || string.IsNullOrEmpty(accessToken) || client == null) {
+				return false;
+			}
+
+			using (HttpRequestMessage request = new(HttpMethod.Post, Path.Combine(baseUrl, "jwt-auth/v1/token/validate"))) {
+				request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+
+				try {
+					using (HttpResponseMessage response = await client.Client.SendAsync(request).ConfigureAwait(false)) {
+						if (!response.IsSuccessStatusCode) {
+							return false;
+						}
+
+						Validate validation = JsonConvert.DeserializeObject<Validate>(await response.Content.ReadAsStringAsync());
 						return validation.IsSuccess;
 					}
 				}

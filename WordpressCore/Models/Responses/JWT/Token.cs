@@ -2,30 +2,16 @@ using Newtonsoft.Json;
 
 namespace WordpressCore.Models.Responses.JWT {
 	internal class Token : Base {
-		[JsonProperty("data")]
-		internal TokenContainer Container { get; set; }
+		[JsonProperty("token")]
+		public string TokenValue { get; set; }
 
-		internal class TokenContainer {
-			[JsonProperty("token")]
-			internal string Token { get; set; }
+		[JsonProperty("user_email")]
+		public string UserEmail { get; set; }
 
-			[JsonProperty("id")]
-			internal int Id { get; set; }
+		[JsonProperty("user_nicename")]
+		public string UserNiceName { get; set; }
 
-			[JsonProperty("email")]
-			internal string Email { get; set; }
-
-			[JsonProperty("nicename")]
-			internal string NiceName { get; set; }
-
-			[JsonProperty("firstName")]
-			internal string FirstName { get; set; }
-
-			[JsonProperty("lastName")]
-			internal string LastName { get; set; }
-
-			[JsonProperty("displayName")]
-			internal string DisplayName { get; set; }
-		}
+		[JsonProperty("user_display_name")]
+		public string UserDisplayName { get; set; }
 	}
 }

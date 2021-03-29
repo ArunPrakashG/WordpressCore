@@ -21,59 +21,14 @@ namespace WordpressCore.Demo {
 			.WithJsonSerializerSetting(new JsonSerializerSettings() {
 				ConstructorHandling = ConstructorHandling.AllowNonPublicDefaultConstructor,
 				MissingMemberHandling = MissingMemberHandling.Ignore
+			})
+			.WithGlobalResponseProcessor((response) => {
+				Console.WriteLine(response);
+				return true;
 			});
 
-			var collection = new List<Post>();
-
-			Response<IEnumerable<Post>> posts = await client.GetPopularPostsAsync((builder) => builder
-				.WithPopularPostsQuery((pop) => pop
-					.WithLimit(20)
-					.WithOffset(collection.Count)
-					.WithPopularPostsOrder(OrderPopularPostsBy.Views)
-					.WithRange(TimeRange.Custom)
-					.WithTimeQuantity(64)
-					.WithUnit(TimeUnit.Day)
-					.Create())
-				.CreateWithCallback(new Callback(OnException, OnResponseReceived, OnRequestStatus)));
-
-			if (!posts.Status) {
-				// Request failed
-				Console.WriteLine(posts.Message);
-				return -1;
-			}
-
-			foreach(var post in posts.Value) {
-				collection.Add(post);
-				Console.WriteLine(post.Id);
-			}
-
-			Console.WriteLine("--------------------------------------");
-			posts = await client.GetPopularPostsAsync((builder) => builder
-				.WithPopularPostsQuery((pop) => pop
-					.WithLimit(20)
-					.WithOffset(collection.Count)
-					.WithPopularPostsOrder(OrderPopularPostsBy.Views)
-					.WithRange(TimeRange.Custom)
-					.WithTimeQuantity(64)
-					.WithUnit(TimeUnit.Day)
-					.Create())
-				.CreateWithCallback(new Callback(OnException, OnResponseReceived, OnRequestStatus)));
-
-			if (!posts.Status) {
-				// Request failed
-				Console.WriteLine(posts.Message);
-				return -1;
-			}
-
-			foreach (var post in posts.Value) {
-				if(IsRepeat(collection, post.Id)) {
-					Console.WriteLine($"{post.Id} is repeat");
-					continue;
-				}
-
-				collection.Add(post);
-				Console.WriteLine(post.Id);
-			}
+			WordpressAuthorization auth = new("test", "test", WordpressClient.AuthorizationType.Jwt);
+			Console.WriteLine(await auth.IsLoggedInAsync(client).ConfigureAwait(false));
 
 			Console.ReadKey();
 			return 0;

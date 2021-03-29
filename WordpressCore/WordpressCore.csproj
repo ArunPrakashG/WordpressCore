@@ -15,9 +15,9 @@
     <EnableNETAnalyzers>true</EnableNETAnalyzers>
     <Nullable>disable</Nullable>
     <NeutralLanguage>en-US</NeutralLanguage>
-    <AssemblyVersion>1.3.7.0</AssemblyVersion>
-    <FileVersion>1.3.7.0</FileVersion>
-    <Version>1.3.7.0</Version>
+    <AssemblyVersion>1.3.8.2</AssemblyVersion>
+    <FileVersion>1.3.8.2</FileVersion>
+    <Version>1.3.8.2</Version>
     <AssemblyOriginatorKeyFile>GeneralSign.pfx</AssemblyOriginatorKeyFile>
     <DelaySign>false</DelaySign>
     <AssemblyName>WordpressCore</AssemblyName>
@@ -25,7 +25,7 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-    <DocumentationFile>K:\GitHub-Projects\WordpressCore\WordpressCore\WordpressCore.xml</DocumentationFile>
+    <DocumentationFile>Out\WordpressCore.xml</DocumentationFile>
     <OutputPath>Out\</OutputPath>
   </PropertyGroup>
 

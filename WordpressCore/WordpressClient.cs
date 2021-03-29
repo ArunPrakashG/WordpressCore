@@ -41,7 +41,7 @@ namespace WordpressCore {
 
 		static WordpressClient() => EndpointRequestCount = new Dictionary<string, int>();
 
-		private HttpClient Client {
+		internal HttpClient Client {
 			get {
 				if (_client == null) {
 					_client = GenerateDisposableClient();
@@ -327,6 +327,16 @@ namespace WordpressCore {
 		/// <returns></returns>
 		public virtual async Task<Response<User>> GetUserAsync(int userId, Func<RequestBuilder, Request> request) {
 			Request requestContainer = request.Invoke(RequestBuilder.WithBuilder().WithBaseAndEndpoint(Path.Combine(BaseUrl, UrlPath), Path.Combine("users", userId.ToString())));
+			return await ExecuteAsync<User>(requestContainer).ConfigureAwait(false);
+		}
+
+		/// <summary>
+		/// Gets the current logged in User details.
+		/// </summary>
+		/// <param name="request"></param>
+		/// <returns></returns>
+		public virtual async Task<Response<User>> GetCurrentUserAsync(Func<RequestBuilder, Request> request) {
+			Request requestContainer = request.Invoke(RequestBuilder.WithBuilder().WithBaseAndEndpoint(Path.Combine(BaseUrl, UrlPath), Path.Combine("users", "me")));
 			return await ExecuteAsync<User>(requestContainer).ConfigureAwait(false);
 		}
 
@@ -686,17 +696,28 @@ namespace WordpressCore {
 				await RequestSync.WaitAsync().ConfigureAwait(false);
 			}
 
-			Response<T> responseContainer = new Response<T>();
-			Stopwatch watch = new Stopwatch();
+			Response<T> responseContainer = new();
+			Stopwatch watch = new();
 
 			try {
-				using (HttpRequestMessage httpRequest = new HttpRequestMessage(HttpMethod.Get, request.RequestUri)) {
+				using (HttpRequestMessage httpRequest = new(HttpMethod.Get, request.RequestUri)) {
 					if (request.Token != default) {
 						cancellationToken = request.Token;
 					}
 
 					if (cancellationToken == default) {
 						cancellationToken = new CancellationTokenSource(TimeSpan.FromSeconds(TIMEOUT)).Token;
+					}
+
+					if (request.HasHeaders) {
+						httpRequest.TryAddHeaders(request.Headers);
+					}
+
+					if (request.ShouldAuthorize && !await Utilites.AuthorizeRequest(httpRequest, Client, BaseUrl, request.Authorization, request.Callback).ConfigureAwait(false)) {
+						SetResponseContainerValues(ref watch, ref responseContainer, null);
+						responseContainer.SetValue(default);
+						responseContainer.SetMessage("Authorization failed.");
+						return responseContainer;
 					}
 
 					watch.Start();

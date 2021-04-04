@@ -30,6 +30,7 @@ namespace WordpressCore {
 		private SemaphoreSlim RequestSync;
 		private static Action<string, int> EndpointRequestCountChangedCallback;
 		private static Func<string, bool> GlobalResponsePreprocessorCallback;
+		internal static Func<ActivityStatus, Task> OnActivityCallback;
 		internal static Func<string, string> HtmlResponseCleanerCallback;
 
 		/// <summary>
@@ -157,6 +158,17 @@ namespace WordpressCore {
 		/// <returns><see cref="WordpressClient"/></returns>
 		public  WordpressClient WithDefaultUserAgent(string userAgent) {
 			Client.DefaultRequestHeaders.UserAgent.ParseAdd(userAgent);
+			return this;
+		}
+
+		/// <summary>
+		/// Registers a callback which will be invoked during activities such as requesting etc.
+		/// <para><see cref="ActivityStatus"/> value indicates the activity current status.</para>
+		/// </summary>
+		/// <param name="callback"></param>
+		/// <returns></returns>
+		public WordpressClient WithActivityCallback(Func<ActivityStatus, Task> callback) {
+			OnActivityCallback = callback ?? throw new ArgumentNullException(nameof(callback));
 			return this;
 		}
 
@@ -452,6 +464,15 @@ namespace WordpressCore {
 				.SetStatusCode(response.StatusCode);
 		}
 
+		/// <summary>
+		/// Creates a custom request to be send to the API.
+		/// </summary>
+		/// <typeparam name="T"></typeparam>
+		/// <param name="requestBase"></param>
+		/// <param name="requestEndpoint"></param>
+		/// <param name="method"></param>
+		/// <param name="request"></param>
+		/// <returns></returns>
 		public virtual async Task<Response<T>> ExecuteCustomRequestAsync<T>(string requestBase, string requestEndpoint, HttpMethod method, Func<RequestBuilder, Request> request) where T: class {
 			Request requestContainer = request.Invoke(RequestBuilder.WithBuilder().WithBaseAndEndpoint(requestBase, requestEndpoint).WithHttpMethod(method));
 			return await ExecuteAsync<T>(requestContainer).ConfigureAwait(false);
@@ -496,6 +517,8 @@ namespace WordpressCore {
 		/// <param name="cancellationToken">The Cancellation Token (if any)</param>
 		/// <returns></returns>
 		protected virtual async Task<Response<HttpResponseMessage>> DeleteRequestAsync(Request request, CancellationToken cancellationToken = default) {
+			await InvokeActivityCallback(ActivityStatus.Started);
+
 			if (request == null || !request.IsRequestExecutable) {
 				return default;
 			}
@@ -506,6 +529,7 @@ namespace WordpressCore {
 
 			Response<HttpResponseMessage> responseContainer = new Response<HttpResponseMessage>();
 			Stopwatch watch = new Stopwatch();
+			await InvokeActivityCallback(ActivityStatus.Running);
 
 			try {
 				using (HttpRequestMessage httpRequest = new HttpRequestMessage(HttpMethod.Delete, request.RequestUri)) {
@@ -566,12 +590,14 @@ namespace WordpressCore {
 				}
 			}
 			catch (OperationCanceledException oc) {
+				await InvokeActivityCallback(ActivityStatus.Aborted);
 				request.Callback?.RequestCallback?.Invoke(new RequestStatus(false, "Operation cancelled. (passed timeout limit)"));
 				SetResponseContainerValues(ref watch, ref responseContainer, null);
 				responseContainer.SetMessage($"Request exceptioned occured. ({oc.HResult}) [Passed timeout limit]", "----------------------------", oc.Message, "----------------------------");
 				return responseContainer.SetException(oc).SetValue(default);
 			}
 			catch (Exception e) {
+				await InvokeActivityCallback(ActivityStatus.Aborted);
 				request.Callback?.UnhandledExceptionCallback?.Invoke(e);
 				request.Callback?.RequestCallback?.Invoke(new RequestStatus(false, e.Message));
 				SetResponseContainerValues(ref watch, ref responseContainer, null);
@@ -582,6 +608,8 @@ namespace WordpressCore {
 				if (Threadsafe) {
 					RequestSync.Release();
 				}
+
+				await InvokeActivityCallback(ActivityStatus.Finished);
 			}
 		}
 
@@ -592,6 +620,8 @@ namespace WordpressCore {
 		/// <param name="cancellationToken">The Cancellation Token (if any)</param>
 		/// <returns></returns>
 		protected virtual async Task<Response<T>> PostRequestAsync<T>(Request request, CancellationToken cancellationToken = default) {
+			await InvokeActivityCallback(ActivityStatus.Started);
+
 			if (request == null || !request.IsRequestExecutable) {
 				return default;
 			}
@@ -601,8 +631,9 @@ namespace WordpressCore {
 			}
 
 			Response<T> responseContainer = new Response<T>();
-			Stopwatch watch = new Stopwatch();
+			Stopwatch watch = new();
 
+			await InvokeActivityCallback(ActivityStatus.Running);
 			try {
 				using (HttpRequestMessage httpRequest = new HttpRequestMessage(HttpMethod.Post, request.RequestUri)) {
 					if (request.Token != default) {
@@ -662,12 +693,14 @@ namespace WordpressCore {
 				}
 			}
 			catch (OperationCanceledException oc) {
+				await InvokeActivityCallback(ActivityStatus.Aborted);
 				request.Callback?.RequestCallback?.Invoke(new RequestStatus(false, "Operation cancelled. (passed timeout limit)"));
 				SetResponseContainerValues(ref watch, ref responseContainer, null);
 				responseContainer.SetMessage($"Request exceptioned occured. ({oc.HResult}) [Passed timeout limit]", "----------------------------", oc.Message, "----------------------------");
 				return responseContainer.SetException(oc).SetValue(default);
 			}
 			catch (Exception e) {
+				await InvokeActivityCallback(ActivityStatus.Aborted);
 				request.Callback?.UnhandledExceptionCallback?.Invoke(e);
 				request.Callback?.RequestCallback?.Invoke(new RequestStatus(false, e.Message));
 				SetResponseContainerValues(ref watch, ref responseContainer, null);
@@ -678,6 +711,8 @@ namespace WordpressCore {
 				if (Threadsafe) {
 					RequestSync.Release();
 				}
+
+				await InvokeActivityCallback(ActivityStatus.Finished);
 			}
 		}
 
@@ -688,6 +723,8 @@ namespace WordpressCore {
 		/// <param name="cancellationToken">The Cancellation Token (if any)</param>
 		/// <returns></returns>
 		protected virtual async Task<Response<T>> GetRequestAsync<T>(Request request, CancellationToken cancellationToken = default) {
+			await InvokeActivityCallback(ActivityStatus.Started);
+
 			if (request == null || !request.IsRequestExecutable) {
 				return default;
 			}
@@ -698,6 +735,8 @@ namespace WordpressCore {
 
 			Response<T> responseContainer = new();
 			Stopwatch watch = new();
+
+			await InvokeActivityCallback(ActivityStatus.Running);
 
 			try {
 				using (HttpRequestMessage httpRequest = new(HttpMethod.Get, request.RequestUri)) {
@@ -752,12 +791,16 @@ namespace WordpressCore {
 				}
 			}
 			catch (OperationCanceledException oc) {
+				await InvokeActivityCallback(ActivityStatus.Aborted);
+
 				request.Callback?.RequestCallback?.Invoke(new RequestStatus(false, "Operation cancelled. (passed timeout limit)"));
 				SetResponseContainerValues(ref watch, ref responseContainer, null);
 				responseContainer.SetMessage($"Request exception occured. ({oc.HResult}) [Passed timeout limit]", "----------------------------", oc.Message, "----------------------------");
 				return responseContainer.SetException(oc).SetValue(default);
 			}
 			catch (Exception e) {
+				await InvokeActivityCallback(ActivityStatus.Aborted);
+
 				request.Callback?.UnhandledExceptionCallback?.Invoke(e);
 				request.Callback?.RequestCallback?.Invoke(new RequestStatus(false, e.Message));
 				SetResponseContainerValues(ref watch, ref responseContainer, null);
@@ -768,7 +811,17 @@ namespace WordpressCore {
 				if (Threadsafe) {
 					RequestSync.Release();
 				}
+
+				await InvokeActivityCallback(ActivityStatus.Finished);
 			}
+		}
+
+		internal static async Task InvokeActivityCallback(ActivityStatus status) {
+			if (OnActivityCallback == null) {
+				return;
+			}
+
+			await Task.Run(async () => await OnActivityCallback.Invoke(status));
 		}
 
 		private static void SetResponseContainerValues<T>(ref Stopwatch watch, ref Response<T> responseContainer, HttpResponseMessage response) {
@@ -844,6 +897,14 @@ namespace WordpressCore {
 			/// No authorization. (Default)
 			/// </summary>
 			NoAuth
+		}
+
+		public enum ActivityStatus {
+			Unknown,
+			Started,
+			Running,
+			Finished,
+			Aborted
 		}
 	}
 }

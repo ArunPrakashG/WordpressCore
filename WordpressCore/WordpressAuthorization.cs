@@ -82,6 +82,7 @@ namespace WordpressCore {
 		/// <param name="callback"></param>
 		/// <returns></returns>
 		internal virtual async Task<bool> HandleJwtAuthentication(string baseUrl, HttpClient client, Callback callback = null) {
+			await WordpressClient.InvokeActivityCallback(ActivityStatus.Started);
 			if (AuthorizationType != AuthorizationType.Jwt || client == null || string.IsNullOrEmpty(baseUrl)) {
 				return false;
 			}
@@ -94,6 +95,7 @@ namespace WordpressCore {
 				return true;
 			}
 
+			await WordpressClient.InvokeActivityCallback(ActivityStatus.Running);
 			using (HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Post, Path.Combine(baseUrl, "jwt-auth/v1/token"))) {
 				request.Content = new FormUrlEncodedContent(new[] {
 					new KeyValuePair<string, string>("username", UserName),
@@ -112,8 +114,12 @@ namespace WordpressCore {
 					}
 				}
 				catch (Exception e) {
+					await WordpressClient.InvokeActivityCallback(ActivityStatus.Aborted);
 					callback?.UnhandledExceptionCallback?.Invoke(e);
 					return false;
+				}
+				finally {
+					await WordpressClient.InvokeActivityCallback(ActivityStatus.Finished);
 				}
 			}
 		}
@@ -125,10 +131,13 @@ namespace WordpressCore {
 		/// <param name="client">The HttpClient to use</param>
 		/// <returns></returns>
 		protected virtual async Task<bool> ValidateExistingToken(string baseUrl, HttpClient client) {
+			await WordpressClient.InvokeActivityCallback(ActivityStatus.Started);
+
 			if (AuthorizationType != AuthorizationType.Jwt || client == null || string.IsNullOrEmpty(baseUrl) || string.IsNullOrEmpty(EncryptedAccessToken)) {
 				return false;
 			}
 
+			await WordpressClient.InvokeActivityCallback(ActivityStatus.Running);
 			using (HttpRequestMessage request = new(HttpMethod.Post, Path.Combine(baseUrl, "jwt-auth/v1/token/validate"))) {
 				request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", EncryptedAccessToken);
 
@@ -149,7 +158,11 @@ namespace WordpressCore {
 					}
 				}
 				catch {
+					await WordpressClient.InvokeActivityCallback(ActivityStatus.Aborted);
 					return false;
+				}
+				finally {
+					await WordpressClient.InvokeActivityCallback(ActivityStatus.Finished);
 				}
 			}
 		}
@@ -162,10 +175,12 @@ namespace WordpressCore {
 		/// <param name="client"></param>
 		/// <returns></returns>
 		public static async Task<bool> ValidateJwtToken(string baseUrl, string accessToken, WordpressClient client) {
-			if(string.IsNullOrEmpty(baseUrl) || string.IsNullOrEmpty(accessToken) || client == null) {
+			await WordpressClient.InvokeActivityCallback(ActivityStatus.Started);
+			if (string.IsNullOrEmpty(baseUrl) || string.IsNullOrEmpty(accessToken) || client == null) {
 				return false;
 			}
 
+			await WordpressClient.InvokeActivityCallback(ActivityStatus.Running);
 			using (HttpRequestMessage request = new(HttpMethod.Post, Path.Combine(baseUrl, "jwt-auth/v1/token/validate"))) {
 				request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
 
@@ -180,7 +195,11 @@ namespace WordpressCore {
 					}
 				}
 				catch {
+					await WordpressClient.InvokeActivityCallback(ActivityStatus.Aborted);
 					return false;
+				}
+				finally {
+					await WordpressClient.InvokeActivityCallback(ActivityStatus.Finished);
 				}
 			}
 		}

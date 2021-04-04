@@ -35,7 +35,7 @@ namespace WordpressCore.Models.Requests {
 		/// <summary>
 		/// Gets if the request should be authorized using the specified authorization method.
 		/// </summary>
-		public bool ShouldAuthorize => !Authorization.IsDefault;
+		public bool ShouldAuthorize => Authorization != null && !Authorization.IsDefault;
 
 		/// <summary>
 		/// Gets if the request should be validated using the caller defined <see cref="ValidationDelegate"/>.

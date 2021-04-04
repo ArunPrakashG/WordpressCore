@@ -27,8 +27,7 @@ namespace WordpressCore.Demo {
 				return true;
 			});
 
-			WordpressAuthorization auth = new("test", "test", WordpressClient.AuthorizationType.Jwt);
-			Console.WriteLine(await auth.IsLoggedInAsync(client).ConfigureAwait(false));
+			Console.WriteLine(await client.GetCategoriesAsync((builder) => builder.Create()));
 
 			Console.ReadKey();
 			return 0;

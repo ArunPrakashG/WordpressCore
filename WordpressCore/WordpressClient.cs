@@ -24,7 +24,7 @@ namespace WordpressCore {
 		private readonly string BaseUrl = "http://demo.wp-api.org/wp-json/";
 		private HttpClient _client;
 		private HttpClientHandler _clientHandler;
-		private WordpressAuthorization LoginDetails;
+		private WordpressAuthorization DefaultAuthorization;
 		private CookieContainer Cookies;
 		private JsonSerializerSettings JsonSerializerSettings;
 		private SemaphoreSlim RequestSync;
@@ -118,24 +118,24 @@ namespace WordpressCore {
 		/// Adds a Authorization header to all request from this <see cref="HttpClient"/> instance by using the specified authorization method.
 		/// <para>Supports JWT authentication as well as BasicAuth (requires plugin)</para>
 		/// </summary>
-		/// <param name="loginDetails">Authorization configuration</param>
+		/// <param name="authorization">Authorization configuration</param>
 		/// <returns><see cref="WordpressClient"/></returns>
-		public virtual async Task<WordpressClient> WithDefaultAuthorization(WordpressAuthorization loginDetails) {
-			if (loginDetails.IsDefault) {
+		public virtual async Task<WordpressClient> WithDefaultAuthorization(WordpressAuthorization authorization) {
+			if (authorization == null || authorization.IsDefault) {
 				return this;
 			}
 
-			if (!LoginDetails.IsDefault) {
+			if (!DefaultAuthorization.IsDefault) {
 				return this;
 			}
 
-			LoginDetails = loginDetails;
+			DefaultAuthorization = authorization;
 
-			if (loginDetails.AuthorizationType == AuthorizationType.Jwt && !await loginDetails.HandleJwtAuthentication(BaseUrl, Client).ConfigureAwait(false)) {
+			if (!authorization.IsValidAuth && authorization.AuthorizationType == AuthorizationType.Jwt && !await authorization.HandleJwtAuthentication(BaseUrl, Client).ConfigureAwait(false)) {
 				return this;
 			}
 
-			Client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(loginDetails.Scheme, loginDetails.EncryptedAccessToken);
+			Client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(authorization.Scheme, authorization.EncryptedAccessToken);
 			return this;
 		}
 
@@ -247,6 +247,20 @@ namespace WordpressCore {
 		public WordpressClient WithHtmlResponseCleaner(Func<string, string> cleanerDelegate) {
 			HtmlResponseCleanerCallback = cleanerDelegate;
 			return this;
+		}
+
+		/// <summary>
+		/// Checks if current user is logged in.
+		/// </summary>
+		/// <param name="auth"></param>
+		/// <param name="callback"></param>
+		/// <returns></returns>
+		public async Task<bool> IsLoggedInAsync(WordpressAuthorization auth, Callback callback = null) {
+			var currentUser = await GetCurrentUserAsync((builder) => builder
+				.WithAuthorization(auth ?? DefaultAuthorization)
+				.CreateWithCallback(callback));
+
+			return currentUser != null && currentUser.Status;
 		}
 
 		/// <summary>

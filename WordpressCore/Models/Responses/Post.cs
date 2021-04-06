@@ -120,6 +120,10 @@ namespace WordpressCore.Models.Responses {
 			[JsonProperty("rendered")]
 			public string Rendered { get; set; }
 
+			[JsonIgnore]
+			public string Parsed => !string.IsNullOrEmpty(Rendered) ? Rendered.CleanContent() : Rendered;
+
+
 			[JsonProperty("_protected")]
 			public bool Protected { get; set; }
 		}

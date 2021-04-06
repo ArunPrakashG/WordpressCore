@@ -307,7 +307,7 @@ namespace WordpressCore.Models.Requests {
 		/// <param name="auth">The <see cref="WordpressAuthorization"/> container</param>
 		/// <returns></returns>
 		public RequestBuilder WithAuthorization(WordpressAuthorization auth) {
-			if (auth.IsDefault) {
+			if (auth == null || auth.IsDefault) {
 				return this;
 			}
 

@@ -16,7 +16,7 @@ namespace WordpressCore {
 	public class WordpressAuthorization {
 		internal bool IsDefault => string.IsNullOrEmpty(UserName) || string.IsNullOrEmpty(Password);
 
-		internal static WordpressAuthorization Default => new(string.Empty, string.Empty, type: AuthorizationType.NoAuth);		
+		internal static WordpressAuthorization Default => new(string.Empty, string.Empty, type: AuthorizationType.NoAuth);
 		internal readonly string UserName;
 		internal readonly string Password;
 		internal readonly string JwtToken;
@@ -58,20 +58,6 @@ namespace WordpressCore {
 						break;
 				}
 			}
-		}
-
-		/// <summary>
-		/// Checks if current user is logged in.
-		/// </summary>
-		/// <param name="client"></param>
-		/// <param name="callback"></param>
-		/// <returns></returns>
-		public async Task<bool> IsLoggedInAsync(WordpressClient client, Callback callback = null) {
-			var currentUser = await client.GetCurrentUserAsync((builder) => builder
-				.WithAuthorization(this)
-				.CreateWithCallback(callback));
-
-			return currentUser != null && currentUser.Status;
 		}
 
 		/// <summary>

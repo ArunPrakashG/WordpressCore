@@ -125,7 +125,7 @@ namespace WordpressCore {
 				return this;
 			}
 
-			if (!DefaultAuthorization.IsDefault) {
+			if (DefaultAuthorization != null && !DefaultAuthorization.IsDefault) {
 				return this;
 			}
 
@@ -252,15 +252,36 @@ namespace WordpressCore {
 		/// <summary>
 		/// Checks if current user is logged in.
 		/// </summary>
-		/// <param name="auth"></param>
 		/// <param name="callback"></param>
 		/// <returns></returns>
-		public async Task<bool> IsLoggedInAsync(WordpressAuthorization auth, Callback callback = null) {
-			var currentUser = await GetCurrentUserAsync((builder) => builder
-				.WithAuthorization(auth ?? DefaultAuthorization)
-				.CreateWithCallback(callback));
+		public async Task<bool> IsLoggedInAsync(Callback callback = null) {
+			var currentUser = await GetCurrentUserAsync((builder) => builder.CreateWithCallback(callback));
+			return (currentUser != null && currentUser.Status) || (DefaultAuthorization != null && !DefaultAuthorization.IsDefault && DefaultAuthorization.IsValidAuth);
+		}
 
-			return currentUser != null && currentUser.Status;
+		/// <summary>
+		/// Authorizes the specified user.
+		/// </summary>
+		/// <param name="auth"></param>
+		/// <param name="setCurrentAuthAsDefaultOnSuccess"></param>
+		/// <param name="callback"></param>
+		/// <returns></returns>
+		public async Task<bool> LoginAsync(WordpressAuthorization auth, bool setCurrentAuthAsDefaultOnSuccess = true, Callback callback = null) {
+			if(auth == null) {
+				return false;
+			}
+
+			var currentUser = await GetCurrentUserAsync((builder) => builder.WithAuthorization(auth).CreateWithCallback(callback));
+
+			if(currentUser.Status && currentUser.Value != null && !string.IsNullOrEmpty(currentUser.Value.Slug)) {
+				if (setCurrentAuthAsDefaultOnSuccess) {
+					await WithDefaultAuthorization(auth).ConfigureAwait(false);
+				}
+
+				return true;
+			}
+
+			return false;
 		}
 
 		/// <summary>

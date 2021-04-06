@@ -17,7 +17,11 @@ namespace WordpressCore.Demo {
 			CookieContainer container = new CookieContainer();
 			CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
 			WordpressClient client = new WordpressClient("https://www.example.com/wp-json/", maxConcurrentRequestsPerInstance: 8, timeout: 60)			
-			.WithCookieContainer(ref container)			
+			.WithCookieContainer(ref container)
+			.WithActivityCallback((type) => {
+				Console.WriteLine(type);
+				return Task.CompletedTask;
+			})
 			.WithJsonSerializerSetting(new JsonSerializerSettings() {
 				ConstructorHandling = ConstructorHandling.AllowNonPublicDefaultConstructor,
 				MissingMemberHandling = MissingMemberHandling.Ignore
@@ -27,14 +31,26 @@ namespace WordpressCore.Demo {
 				return true;
 			});
 
-			Console.WriteLine(await client.GetCategoriesAsync((builder) => builder.Create()));
+			redo:
+			WordpressAuthorization auth = new WordpressAuthorization("username", "password", WordpressClient.AuthorizationType.Jwt);
+
+			if(await client.IsLoggedInAsync()) {
+				Console.WriteLine("Already logged in.");				
+			}
+			else {
+				if(await client.LoginAsync(auth).ConfigureAwait(false)) {
+					Console.WriteLine("Logged in now");
+				}
+			}
+
+			var currentUser = await client.GetCurrentUserAsync((builder) => builder.Create());
+			Console.WriteLine(currentUser.Message);
 
 			Console.ReadKey();
+			goto redo;
+			
+			Console.ReadKey();
 			return 0;
-		}
-
-		private static bool IsRepeat(List<Post> posts, int id) {
-			return posts.Where(x => x.Id == id).Any();
 		}
 
 		private static void OnRequestStatus(RequestStatus obj) {

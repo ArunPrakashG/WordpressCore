@@ -30,6 +30,11 @@ namespace WordpressCore {
 		/// </summary>
 		public bool IsValidAuth => !string.IsNullOrEmpty(EncryptedAccessToken);
 
+		internal bool Logout() {
+			EncryptedAccessToken = null;
+			return true;
+		}
+
 		/// <summary>
 		/// Instantiate an authorization handler for requests.
 		/// </summary>

@@ -285,6 +285,15 @@ namespace WordpressCore {
 		}
 
 		/// <summary>
+		/// Removes the default authorization internally. therefore, no longer authorizing any futher requests from this instance.
+		/// </summary>
+		public void LogoutUser() {
+			DefaultAuthorization?.Logout();
+			DefaultAuthorization = null;
+			Client.DefaultRequestHeaders.Authorization = default;
+		}
+
+		/// <summary>
 		/// Gets all Categories formatted using the request builder.
 		/// </summary>
 		/// <param name="request">The request builder</param>
@@ -692,7 +701,7 @@ namespace WordpressCore {
 						responseContainer.SetValue(default);
 						responseContainer.SetMessage("Authorization failed.");
 						return responseContainer;
-					}
+					}					
 
 					watch.Start();
 					using (HttpResponseMessage response = await Client.SendAsync(httpRequest, cancellationToken).ConfigureAwait(false)) {

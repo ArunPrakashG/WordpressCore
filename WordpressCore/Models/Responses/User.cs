@@ -25,6 +25,9 @@ namespace WordpressCore.Models.Responses {
 		[JsonProperty("avatar_urls")]
 		public AvatarUrls AvatarContainer { get; set; }
 
+		[JsonProperty("roles")]
+		public string[] Roles { get; set; }
+
 		[JsonProperty("capabilities", ItemConverterType = typeof(CustomCapabilitiesJsonConverter))]
 		public IDictionary<string, bool> Capabilities { get; set; }
 
